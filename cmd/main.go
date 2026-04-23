@@ -4,6 +4,7 @@ import (
 	"log"
 	"sukima-trip-backend/config"
 	"sukima-trip-backend/internal/handler"
+	"sukima-trip-backend/internal/middleware"
 	"sukima-trip-backend/internal/repository"
 
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,16 @@ func main() {
 	{
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
+	}
+
+	// 認証が必要なルートグループ
+	api := r.Group("/api")
+	api.Use(middleware.AuthMiddleware(db))
+	{
+		api.GET("/health-auth", func(c *gin.Context) {
+			userID := c.GetString("user_id")
+			c.JSON(200, gin.H{"status": "ok", "user_id": userID})
+		})
 	}
 
 	r.Run(":8080")
