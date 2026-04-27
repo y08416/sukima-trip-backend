@@ -28,6 +28,9 @@ func main() {
 	profileRepo := repository.NewProfileRepository(db)
 	profileHandler := handler.NewProfileHandler(profileRepo, db)
 
+	movementRepo := repository.NewMovementRepository(db)
+	movementHandler := handler.NewMovementHandler(movementRepo)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -46,6 +49,10 @@ func main() {
 		api.GET("/profile", profileHandler.GetProfile)
 		api.PUT("/profile", profileHandler.UpdateProfile)
 		api.POST("/profile/avatar", profileHandler.UploadAvatar)
+
+		api.GET("/movements/today", movementHandler.GetToday)
+		api.POST("/movements/today", movementHandler.SaveToday)
+		api.GET("/movements/total", movementHandler.GetTotal)
 	}
 
 	r.Run(":8080")
