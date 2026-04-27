@@ -31,6 +31,9 @@ func main() {
 	movementRepo := repository.NewMovementRepository(db)
 	movementHandler := handler.NewMovementHandler(movementRepo)
 
+	coinRepo := repository.NewCoinRepository(db)
+	coinHandler := handler.NewCoinHandler(coinRepo)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -53,6 +56,8 @@ func main() {
 		api.GET("/movements/today", movementHandler.GetToday)
 		api.POST("/movements/today", movementHandler.SaveToday)
 		api.GET("/movements/total", movementHandler.GetTotal)
+
+		api.GET("/coins", coinHandler.GetBalance)
 	}
 
 	r.Run(":8080")
