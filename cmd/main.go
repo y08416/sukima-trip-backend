@@ -34,6 +34,9 @@ func main() {
 	coinRepo := repository.NewCoinRepository(db)
 	coinHandler := handler.NewCoinHandler(coinRepo)
 
+	visitedPlaceRepo := repository.NewVisitedPlaceRepository(db)
+	visitedPlaceHandler := handler.NewVisitedPlaceHandler(visitedPlaceRepo)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -58,6 +61,9 @@ func main() {
 		api.GET("/movements/total", movementHandler.GetTotal)
 
 		api.GET("/coins", coinHandler.GetBalance)
+
+		api.GET("/visited-places", visitedPlaceHandler.GetAll)
+		api.POST("/visited-places", visitedPlaceHandler.Save)
 	}
 
 	r.Run(":8080")
