@@ -7,6 +7,7 @@ import (
 	"sukima-trip-backend/internal/middleware"
 	"sukima-trip-backend/internal/repository"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	supa "github.com/supabase-community/supabase-go"
@@ -38,6 +39,13 @@ func main() {
 	visitedPlaceHandler := handler.NewVisitedPlaceHandler(visitedPlaceRepo)
 
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: false,
+	}))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
