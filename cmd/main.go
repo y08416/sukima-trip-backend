@@ -41,6 +41,9 @@ func main() {
 	spotRepo := repository.NewSpotRepository(cfg.GooglePlacesAPIKey)
 	spotHandler := handler.NewSpotHandler(spotRepo, coinRepo, visitedPlaceRepo)
 
+	likeRepo := repository.NewLikeRepository(db)
+	likeHandler := handler.NewLikeHandler(likeRepo)
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -80,6 +83,8 @@ func main() {
 
 		api.GET("/spots", spotHandler.GetSpots)
 		api.POST("/spots/:id/arrive", spotHandler.Arrive)
+		api.POST("/spots/:id/like", likeHandler.Save)
+		api.DELETE("/spots/:id/like", likeHandler.Delete)
 	}
 
 	r.Run(":8080")
