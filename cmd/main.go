@@ -38,6 +38,9 @@ func main() {
 	visitedPlaceRepo := repository.NewVisitedPlaceRepository(db)
 	visitedPlaceHandler := handler.NewVisitedPlaceHandler(visitedPlaceRepo)
 
+	spotRepo := repository.NewSpotRepository(cfg.GooglePlacesAPIKey)
+	spotHandler := handler.NewSpotHandler(spotRepo, coinRepo, visitedPlaceRepo)
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -74,6 +77,9 @@ func main() {
 
 		api.GET("/visited-places", visitedPlaceHandler.GetAll)
 		api.POST("/visited-places", visitedPlaceHandler.Save)
+
+		api.GET("/spots", spotHandler.GetSpots)
+		api.POST("/spots/:id/arrive", spotHandler.Arrive)
 	}
 
 	r.Run(":8080")
