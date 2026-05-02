@@ -44,6 +44,9 @@ func main() {
 	likeRepo := repository.NewLikeRepository(db)
 	likeHandler := handler.NewLikeHandler(likeRepo)
 
+	favoriteRepo := repository.NewFavoriteRepository(db)
+	favoriteHandler := handler.NewFavoriteHandler(favoriteRepo)
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -85,6 +88,10 @@ func main() {
 		api.POST("/spots/:id/arrive", spotHandler.Arrive)
 		api.POST("/spots/:id/like", likeHandler.Save)
 		api.DELETE("/spots/:id/like", likeHandler.Delete)
+
+		api.GET("/favorites", favoriteHandler.GetAll)
+		api.POST("/favorites", favoriteHandler.Save)
+		api.DELETE("/favorites/:id", favoriteHandler.Delete)
 	}
 
 	r.Run(":8080")
