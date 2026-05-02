@@ -47,9 +47,11 @@ func main() {
 		AllowCredentials: false,
 	}))
 
-	r.GET("/health", func(c *gin.Context) {
+	healthHandler := func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
-	})
+	}
+	r.GET("/health", healthHandler)
+	r.HEAD("/health", healthHandler)
 
 	auth := r.Group("/auth")
 	{
