@@ -6,13 +6,16 @@ import (
 	"io"
 	"math"
 	"net/http"
+	neturl "net/url"
 	"sukima-trip-backend/internal/model"
 )
 
 const (
-	placesAPIURL  = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-	searchRadius  = 5000
-	CoinPerArrive = 10
+	placesAPIURL        = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+	placesDetailsAPIURL = "https://maps.googleapis.com/maps/api/place/details/json"
+	searchRadius        = 5000
+	ArriveRadiusKm      = 0.1
+	CoinPerArrive       = 10
 )
 
 type SpotRepository struct {
@@ -62,13 +65,75 @@ func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) 
 			Name:       r.Name,
 			Lat:        r.Geometry.Location.Lat,
 			Lng:        r.Geometry.Location.Lng,
-			DistanceKm: calcDistance(lat, lng, r.Geometry.Location.Lat, r.Geometry.Location.Lng),
+			DistanceKm: CalcDistance(lat, lng, r.Geometry.Location.Lat, r.Geometry.Location.Lng),
 		})
 	}
 	return spots, nil
 }
 
-func calcDistance(lat1, lng1, lat2, lng2 float64) float64 {
+func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, error) {
+	endpoint := fmt.Sprintf("%s?place_id=%s&fields=geometry&key=%s",
+		placesDetailsAPIURL, placeID, r.apiKey)
+
+	resp, err := http.Get(endpoint)
+	if err != nil {
+		return 0, 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, 0, fmt.Errorf("レスポンス読み込み失敗: %w", err)
+	}
+
+	var result struct {
+		Result struct {
+			Geometry struct {
+				Location struct {
+					Lat float64 `json:"lat"`
+					Lng float64 `json:"lng"`
+				} `json:"location"`
+			} `json:"geometry"`
+		} `json:"result"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return 0, 0, fmt.Errorf("データ変換失敗: %w", err)
+	}
+
+	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, nil
+}
+
+func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
+	endpoint := fmt.Sprintf("https://ja.wikipedia.org/api/rest_v1/page/summary/%s",
+		neturl.PathEscape(name))
+
+	resp, err := http.Get(endpoint)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return "", ""
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", ""
+	}
+
+	var result struct {
+		Extract   string `json:"extract"`
+		Thumbnail struct {
+			Source string `json:"source"`
+		} `json:"thumbnail"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", ""
+	}
+
+	return result.Extract, result.Thumbnail.Source
+}
+
+func CalcDistance(lat1, lng1, lat2, lng2 float64) float64 {
 	const earthRadiusKm = 6371.0
 	dLat := (lat2 - lat1) * math.Pi / 180
 	dLng := (lng2 - lng1) * math.Pi / 180

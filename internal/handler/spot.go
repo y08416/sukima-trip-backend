@@ -66,6 +66,17 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
+	spotLat, spotLng, err := h.spotRepo.GetPlaceLocation(placeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
+		return
+	}
+
+	if repository.CalcDistance(req.Lat, req.Lng, spotLat, spotLng) > repository.ArriveRadiusKm {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "スポットに到着していません"})
+		return
+	}
+
 	if err := h.visitedRepo.Save(userID, model.SaveVisitedPlaceRequest{
 		PlaceID:   placeID,
 		PlaceName: req.PlaceName,
@@ -85,9 +96,13 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
+	wikiSummary, photoURL := h.spotRepo.GetWikiInfo(req.PlaceName)
+
 	c.JSON(http.StatusOK, model.ArriveResponse{
-		Message:    "到着を記録しました",
-		CoinEarned: repository.CoinPerArrive,
-		Balance:    balance,
+		Message:     "到着を記録しました",
+		CoinEarned:  repository.CoinPerArrive,
+		Balance:     balance,
+		WikiSummary: wikiSummary,
+		PhotoURL:    photoURL,
 	})
 }
