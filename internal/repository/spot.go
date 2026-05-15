@@ -101,7 +101,13 @@ func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, err
 		return 0, 0, fmt.Errorf("データ変換失敗: %w", err)
 	}
 
-	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, nil
+	lat := result.Result.Geometry.Location.Lat
+	lng := result.Result.Geometry.Location.Lng
+	if lat == 0 && lng == 0 {
+		return 0, 0, fmt.Errorf("スポット座標の取得に失敗しました: place_id=%s", placeID)
+	}
+
+	return lat, lng, nil
 }
 
 func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
@@ -109,10 +115,14 @@ func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
 		neturl.PathEscape(name))
 
 	resp, err := http.Get(endpoint)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		return "", ""
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", ""
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

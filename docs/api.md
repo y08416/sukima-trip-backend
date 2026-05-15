@@ -353,6 +353,16 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 > スポット実座標からの距離が 100m を超えている場合
 
+**エラー** `500`
+
+```json
+{
+  "error": "スポット情報の取得に失敗しました"
+}
+```
+
+> Google Places Details API でスポット座標の取得に失敗した場合
+
 ---
 
 ## いいね API（認証必要）
