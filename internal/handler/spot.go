@@ -77,6 +77,16 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
+	exists, err := h.visitedRepo.Exists(userID, placeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "訪問地の確認に失敗しました"})
+		return
+	}
+	if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "このスポットにはすでに到着済みです"})
+		return
+	}
+
 	if err := h.visitedRepo.Save(userID, model.SaveVisitedPlaceRequest{
 		PlaceID:   placeID,
 		PlaceName: req.PlaceName,
