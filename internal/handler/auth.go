@@ -40,6 +40,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"gender": req.Gender,
 	}, false, "", "", "").Execute()
 	if err != nil {
+		h.repo.DeleteUser(userID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィール作成に失敗しました"})
 		return
 	}
@@ -49,6 +50,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"balance": 0,
 	}, false, "", "", "").Execute()
 	if err != nil {
+		h.db.From("users").Delete("", "").Eq("id", userID).Execute()
+		h.repo.DeleteUser(userID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "コイン初期化に失敗しました"})
 		return
 	}
