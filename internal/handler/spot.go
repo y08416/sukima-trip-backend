@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"sukima-trip-backend/internal/model"
@@ -81,6 +82,10 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		PlaceID:   placeID,
 		PlaceName: req.PlaceName,
 	}); err != nil {
+		if errors.Is(err, repository.ErrAlreadyVisited) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "このスポットにはすでに到着済みです"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "訪問地の保存に失敗しました"})
 		return
 	}
