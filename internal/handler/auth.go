@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"sukima-trip-backend/internal/model"
 	"sukima-trip-backend/internal/repository"
@@ -40,7 +41,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"gender": req.Gender,
 	}, false, "", "", "").Execute()
 	if err != nil {
-		h.repo.DeleteUser(userID)
+		if cleanupErr := h.repo.DeleteUser(userID); cleanupErr != nil {
+			log.Printf("ロールバック失敗(Auth削除): userID=%s err=%v", userID, cleanupErr)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィール作成に失敗しました"})
 		return
 	}
@@ -50,8 +53,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"balance": 0,
 	}, false, "", "", "").Execute()
 	if err != nil {
-		h.db.From("users").Delete("", "").Eq("id", userID).Execute()
-		h.repo.DeleteUser(userID)
+		if _, _, delErr := h.db.From("users").Delete("", "").Eq("id", userID).Execute(); delErr != nil {
+			log.Printf("ロールバック失敗(users削除): userID=%s err=%v", userID, delErr)
+		}
+		if cleanupErr := h.repo.DeleteUser(userID); cleanupErr != nil {
+			log.Printf("ロールバック失敗(Auth削除): userID=%s err=%v", userID, cleanupErr)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "コイン初期化に失敗しました"})
 		return
 	}
