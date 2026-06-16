@@ -97,6 +97,11 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
+	if req.Lat < -90 || req.Lat > 90 || req.Lng < -180 || req.Lng > 180 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "座標が不正です"})
+		return
+	}
+
 	spotLat, spotLng, err := h.spotRepo.GetPlaceLocation(placeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
