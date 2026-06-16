@@ -8,6 +8,7 @@ import (
 	"net/http"
 	neturl "net/url"
 	"sukima-trip-backend/internal/model"
+	"time"
 )
 
 const (
@@ -19,18 +20,24 @@ const (
 )
 
 type SpotRepository struct {
-	apiKey string
+	apiKey     string
+	httpClient *http.Client
+	wikiClient *http.Client
 }
 
 func NewSpotRepository(apiKey string) *SpotRepository {
-	return &SpotRepository{apiKey: apiKey}
+	return &SpotRepository{
+		apiKey:     apiKey,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		wikiClient: &http.Client{Timeout: 3 * time.Second},
+	}
 }
 
 func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) {
 	url := fmt.Sprintf("%s?location=%f,%f&radius=%d&type=tourist_attraction&language=ja&key=%s",
 		placesAPIURL, lat, lng, searchRadius, r.apiKey)
 
-	resp, err := http.Get(url)
+	resp, err := r.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("Places API呼び出し失敗: %w", err)
 	}
@@ -114,7 +121,7 @@ func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
 	endpoint := fmt.Sprintf("https://ja.wikipedia.org/api/rest_v1/page/summary/%s",
 		neturl.PathEscape(name))
 
-	resp, err := http.Get(endpoint)
+	resp, err := r.wikiClient.Get(endpoint)
 	if err != nil {
 		return "", ""
 	}
