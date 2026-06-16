@@ -42,12 +42,8 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	if len([]rune(req.Name)) > 50 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "名前は50文字以内で入力してください"})
-		return
-	}
-	if req.Gender != "" && req.Gender != "male" && req.Gender != "female" && req.Gender != "other" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "性別の値が不正です"})
+	if err := validateNameAndGender(req.Name, req.Gender); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
