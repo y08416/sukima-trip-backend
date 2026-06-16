@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sukima-trip-backend/internal/model"
 
@@ -56,6 +57,29 @@ func (r *VisitedPlaceRepository) Exists(userID, placeID string) (bool, error) {
 		return false, fmt.Errorf("データ変換失敗: %w", err)
 	}
 	return len(rows) > 0, nil
+}
+
+func (r *VisitedPlaceRepository) SaveAndAddCoin(userID, placeID, placeName string, amount int) (int, error) {
+	result := r.client.Rpc("arrive_spot", "", map[string]interface{}{
+		"p_user_id":    userID,
+		"p_place_id":   placeID,
+		"p_place_name": placeName,
+		"p_amount":     amount,
+	})
+
+	trimmed := strings.TrimSpace(result)
+	if balance, err := strconv.Atoi(trimmed); err == nil {
+		return balance, nil
+	}
+
+	var rpcErr rpcError
+	if err := json.Unmarshal([]byte(result), &rpcErr); err != nil {
+		return 0, fmt.Errorf("到着処理失敗: レスポンス解析エラー: %w", err)
+	}
+	if rpcErr.Code == "23505" || strings.Contains(rpcErr.Message, "duplicate key") {
+		return 0, ErrAlreadyVisited
+	}
+	return 0, fmt.Errorf("到着処理失敗: %s", rpcErr.Message)
 }
 
 func (r *VisitedPlaceRepository) Save(userID string, req model.SaveVisitedPlaceRequest) error {

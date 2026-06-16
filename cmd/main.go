@@ -39,7 +39,7 @@ func main() {
 	visitedPlaceHandler := handler.NewVisitedPlaceHandler(visitedPlaceRepo)
 
 	spotRepo := repository.NewSpotRepository(cfg.GooglePlacesAPIKey)
-	spotHandler := handler.NewSpotHandler(spotRepo, coinRepo, visitedPlaceRepo)
+	spotHandler := handler.NewSpotHandler(spotRepo, visitedPlaceRepo)
 
 	likeRepo := repository.NewLikeRepository(db)
 	likeHandler := handler.NewLikeHandler(likeRepo)
