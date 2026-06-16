@@ -35,31 +35,16 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	userID := session.User.ID.String()
 
-	_, _, err = h.db.From("users").Insert(map[string]interface{}{
-		"id":     userID,
-		"name":   req.Name,
-		"gender": req.Gender,
-	}, false, "", "", "").Execute()
-	if err != nil {
+	result := h.db.Rpc("register_user", "", map[string]interface{}{
+		"p_user_id": userID,
+		"p_name":    req.Name,
+		"p_gender":  req.Gender,
+	})
+	if result != "" && result != "null" {
 		if cleanupErr := h.repo.DeleteUser(userID); cleanupErr != nil {
 			log.Printf("ロールバック失敗(Auth削除): userID=%s err=%v", userID, cleanupErr)
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィール作成に失敗しました"})
-		return
-	}
-
-	_, _, err = h.db.From("coins").Insert(map[string]interface{}{
-		"user_id": userID,
-		"balance": 0,
-	}, false, "", "", "").Execute()
-	if err != nil {
-		if _, _, delErr := h.db.From("users").Delete("", "").Eq("id", userID).Execute(); delErr != nil {
-			log.Printf("ロールバック失敗(users削除): userID=%s err=%v", userID, delErr)
-		}
-		if cleanupErr := h.repo.DeleteUser(userID); cleanupErr != nil {
-			log.Printf("ロールバック失敗(Auth削除): userID=%s err=%v", userID, cleanupErr)
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "コイン初期化に失敗しました"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー初期化に失敗しました"})
 		return
 	}
 
