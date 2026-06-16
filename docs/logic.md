@@ -64,10 +64,9 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 3. ユーザー座標とスポット座標の距離をハバーサイン公式で計算
 4. 距離 > 100m → 400 Bad Request を返す（到着していない）
 5. 距離 ≦ 100m → 以下を実行
-   a. visited_places テーブルに訪問地を記録
-   b. coins テーブルのコイン残高に 10 枚加算
-   c. Wikipedia REST API でスポット名の概要・画像 URL を取得
-   d. コイン残高・Wikipedia 情報をレスポンスに含めて返す
+   a. `arrive_spot` RPC で visited_places への記録と coins への加算を1トランザクションで実行（残高を返す）
+   b. Wikipedia REST API でスポット名の概要・画像 URL を取得
+   c. コイン残高・Wikipedia 情報をレスポンスに含めて返す
 ```
 
 到着判定をバックエンドで行う理由：フロントが座標を偽装してコインを不正取得することを防ぐため。
@@ -76,7 +75,7 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 
 - トリガー：スポット到着（距離検証 OK 時のみ）
 - 付与枚数：10 枚固定（`repository.CoinPerArrive = 10`）
-- 処理場所：バックエンド（`coins` テーブルを直接更新）
+- 処理場所：バックエンド（`arrive_spot` RPC 内で `coins` テーブルを原子的に更新）
 
 ---
 

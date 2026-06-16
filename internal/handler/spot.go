@@ -11,19 +11,16 @@ import (
 )
 
 type SpotHandler struct {
-	spotRepo *repository.SpotRepository
-	coinRepo *repository.CoinRepository
+	spotRepo    *repository.SpotRepository
 	visitedRepo *repository.VisitedPlaceRepository
 }
 
 func NewSpotHandler(
 	spotRepo *repository.SpotRepository,
-	coinRepo *repository.CoinRepository,
 	visitedRepo *repository.VisitedPlaceRepository,
 ) *SpotHandler {
 	return &SpotHandler{
 		spotRepo:    spotRepo,
-		coinRepo:    coinRepo,
 		visitedRepo: visitedRepo,
 	}
 }
@@ -111,26 +108,13 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	if err := h.visitedRepo.Save(userID, model.SaveVisitedPlaceRequest{
-		PlaceID:   placeID,
-		PlaceName: req.PlaceName,
-	}); err != nil {
+	balance, err := h.visitedRepo.SaveAndAddCoin(userID, placeID, req.PlaceName, repository.CoinPerArrive)
+	if err != nil {
 		if errors.Is(err, repository.ErrAlreadyVisited) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "このスポットにはすでに到着済みです"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "訪問地の保存に失敗しました"})
-		return
-	}
-
-	if err := h.coinRepo.AddCoin(userID, repository.CoinPerArrive); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "コイン付与に失敗しました"})
-		return
-	}
-
-	balance, err := h.coinRepo.GetBalance(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "コイン残高取得に失敗しました"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "到着処理に失敗しました"})
 		return
 	}
 
