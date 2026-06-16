@@ -17,8 +17,10 @@ func NewMovementRepository(client *supa.Client) *MovementRepository {
 	return &MovementRepository{client: client}
 }
 
+var jst = time.FixedZone("Asia/Tokyo", 9*60*60)
+
 func (r *MovementRepository) GetToday(userID string) (*model.Movement, error) {
-	today := time.Now().Format("2006-01-02")
+	today := time.Now().In(jst).Format("2006-01-02")
 
 	data, _, err := r.client.From("movements").
 		Select("*", "", false).
@@ -38,7 +40,7 @@ func (r *MovementRepository) GetToday(userID string) (*model.Movement, error) {
 }
 
 func (r *MovementRepository) Save(userID string, req model.SaveMovementRequest) error {
-	today := time.Now().Format("2006-01-02")
+	today := time.Now().In(jst).Format("2006-01-02")
 
 	existing, err := r.GetToday(userID)
 	if err != nil {
