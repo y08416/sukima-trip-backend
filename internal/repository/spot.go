@@ -82,7 +82,7 @@ func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, err
 	endpoint := fmt.Sprintf("%s?place_id=%s&fields=geometry&key=%s",
 		placesDetailsAPIURL, placeID, r.apiKey)
 
-	resp, err := http.Get(endpoint)
+	resp, err := r.httpClient.Get(endpoint)
 	if err != nil {
 		return 0, 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
 	}
