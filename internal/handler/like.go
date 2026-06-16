@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"sukima-trip-backend/internal/repository"
 
@@ -28,6 +29,10 @@ func (h *LikeHandler) Save(c *gin.Context) {
 	}
 
 	if err := h.repo.Save(userID, placeID, req.PlaceName); err != nil {
+		if errors.Is(err, repository.ErrAlreadyLiked) {
+			c.JSON(http.StatusConflict, gin.H{"error": "すでにいいね済みです"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "いいねに失敗しました"})
 		return
 	}

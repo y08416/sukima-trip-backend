@@ -1,10 +1,14 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	supa "github.com/supabase-community/supabase-go"
 )
+
+var ErrAlreadyLiked = errors.New("already liked")
 
 type LikeRepository struct {
 	client *supa.Client
@@ -23,6 +27,9 @@ func (r *LikeRepository) Save(userID, placeID, placeName string) error {
 		}, false, "", "", "").
 		Execute()
 	if err != nil {
+		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "duplicate key") {
+			return ErrAlreadyLiked
+		}
 		return fmt.Errorf("いいね保存失敗: %w", err)
 	}
 	return nil
