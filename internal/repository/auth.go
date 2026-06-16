@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/google/uuid"
 	"github.com/supabase-community/gotrue-go/types"
 	supa "github.com/supabase-community/supabase-go"
 )
@@ -22,6 +23,14 @@ func (r *AuthRepository) Register(email, password string) (*types.SignupResponse
 		return nil, err
 	}
 	return session, nil
+}
+
+func (r *AuthRepository) DeleteUser(userID string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+	return r.client.Auth.AdminDeleteUser(types.AdminDeleteUserRequest{UserID: uid})
 }
 
 func (r *AuthRepository) Login(email, password string) (*types.TokenResponse, error) {

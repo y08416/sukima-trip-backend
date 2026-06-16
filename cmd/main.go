@@ -7,6 +7,7 @@ import (
 	"sukima-trip-backend/internal/middleware"
 	"sukima-trip-backend/internal/repository"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	supa "github.com/supabase-community/supabase-go"
@@ -25,11 +26,41 @@ func main() {
 	authRepo := repository.NewAuthRepository(db)
 	authHandler := handler.NewAuthHandler(authRepo, db)
 
+	profileRepo := repository.NewProfileRepository(db)
+	profileHandler := handler.NewProfileHandler(profileRepo, db)
+
+	movementRepo := repository.NewMovementRepository(db)
+	movementHandler := handler.NewMovementHandler(movementRepo)
+
+	coinRepo := repository.NewCoinRepository(db)
+	coinHandler := handler.NewCoinHandler(coinRepo)
+
+	visitedPlaceRepo := repository.NewVisitedPlaceRepository(db)
+	visitedPlaceHandler := handler.NewVisitedPlaceHandler(visitedPlaceRepo)
+
+	spotRepo := repository.NewSpotRepository(cfg.GooglePlacesAPIKey)
+	spotHandler := handler.NewSpotHandler(spotRepo, coinRepo, visitedPlaceRepo)
+
+	likeRepo := repository.NewLikeRepository(db)
+	likeHandler := handler.NewLikeHandler(likeRepo)
+
+	favoriteRepo := repository.NewFavoriteRepository(db)
+	favoriteHandler := handler.NewFavoriteHandler(favoriteRepo)
+
 	r := gin.Default()
 
-	r.GET("/health", func(c *gin.Context) {
+	r.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: false,
+	}))
+
+	healthHandler := func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
-	})
+	}
+	r.GET("/health", healthHandler)
+	r.HEAD("/health", healthHandler)
 
 	auth := r.Group("/auth")
 	{
@@ -37,14 +68,30 @@ func main() {
 		auth.POST("/login", authHandler.Login)
 	}
 
-	// 認証が必要なルートグループ
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(db))
 	{
-		api.GET("/health-auth", func(c *gin.Context) {
-			userID := c.GetString("user_id")
-			c.JSON(200, gin.H{"status": "ok", "user_id": userID})
-		})
+		api.GET("/profile", profileHandler.GetProfile)
+		api.PUT("/profile", profileHandler.UpdateProfile)
+		api.POST("/profile/avatar", profileHandler.UploadAvatar)
+
+		api.GET("/movements/today", movementHandler.GetToday)
+		api.POST("/movements/today", movementHandler.SaveToday)
+		api.GET("/movements/total", movementHandler.GetTotal)
+
+		api.GET("/coins", coinHandler.GetBalance)
+
+		api.GET("/visited-places", visitedPlaceHandler.GetAll)
+		api.POST("/visited-places", visitedPlaceHandler.Save)
+
+		api.GET("/spots", spotHandler.GetSpots)
+		api.POST("/spots/:id/arrive", spotHandler.Arrive)
+		api.POST("/spots/:id/like", likeHandler.Save)
+		api.DELETE("/spots/:id/like", likeHandler.Delete)
+
+		api.GET("/favorites", favoriteHandler.GetAll)
+		api.POST("/favorites", favoriteHandler.Save)
+		api.DELETE("/favorites/:id", favoriteHandler.Delete)
 	}
 
 	r.Run(":8080")
