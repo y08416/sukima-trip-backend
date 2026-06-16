@@ -7,6 +7,11 @@ import (
 	supa "github.com/supabase-community/supabase-go"
 )
 
+type rpcError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 type CoinRepository struct {
 	client *supa.Client
 }
@@ -35,16 +40,14 @@ func (r *CoinRepository) GetBalance(userID string) (int, error) {
 }
 
 func (r *CoinRepository) AddCoin(userID string, amount int) error {
-	balance, err := r.GetBalance(userID)
-	if err != nil {
-		return err
-	}
+	result := r.client.Rpc("increment_balance", "", map[string]interface{}{
+		"p_user_id": userID,
+		"p_amount":  amount,
+	})
 
-	_, _, err = r.client.From("coins").
-		Update(map[string]interface{}{
-			"balance": balance + amount,
-		}, "", "").
-		Eq("user_id", userID).
-		Execute()
-	return err
+	var rpcErr rpcError
+	if err := json.Unmarshal([]byte(result), &rpcErr); err == nil && rpcErr.Code != "" {
+		return fmt.Errorf("コイン加算失敗: %s", rpcErr.Message)
+	}
+	return nil
 }
