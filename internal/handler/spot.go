@@ -57,6 +57,39 @@ func (h *SpotHandler) GetSpots(c *gin.Context) {
 	c.JSON(http.StatusOK, spots)
 }
 
+func (h *SpotHandler) GetNearestSpot(c *gin.Context) {
+	latStr := c.Query("lat")
+	lngStr := c.Query("lng")
+
+	if latStr == "" || lngStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "lat と lng は必須です"})
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "lat の形式が不正です"})
+		return
+	}
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "lng の形式が不正です"})
+		return
+	}
+
+	spot, err := h.spotRepo.GetNearestSpot(lat, lng)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット取得に失敗しました"})
+		return
+	}
+	if spot == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "近くにスポットが見つかりませんでした"})
+		return
+	}
+
+	c.JSON(http.StatusOK, spot)
+}
+
 func (h *SpotHandler) Arrive(c *gin.Context) {
 	userID := c.GetString("user_id")
 	placeID := c.Param("id")
