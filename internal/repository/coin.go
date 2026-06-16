@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	supa "github.com/supabase-community/supabase-go"
 )
@@ -45,8 +46,17 @@ func (r *CoinRepository) AddCoin(userID string, amount int) error {
 		"p_amount":  amount,
 	})
 
+	// void関数の成功時はレスポンスが空またはnull
+	trimmed := strings.TrimSpace(result)
+	if trimmed == "" || trimmed == "null" {
+		return nil
+	}
+
 	var rpcErr rpcError
-	if err := json.Unmarshal([]byte(result), &rpcErr); err == nil && rpcErr.Code != "" {
+	if err := json.Unmarshal([]byte(result), &rpcErr); err != nil {
+		return fmt.Errorf("コイン加算失敗: レスポンス解析エラー: %w", err)
+	}
+	if rpcErr.Code != "" {
 		return fmt.Errorf("コイン加算失敗: %s", rpcErr.Message)
 	}
 	return nil
