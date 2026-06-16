@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sukima-trip-backend/internal/model"
 	"time"
 
@@ -29,7 +30,10 @@ func (r *MovementRepository) GetToday(userID string) (*model.Movement, error) {
 		Single().
 		Execute()
 	if err != nil {
-		return nil, nil
+		if strings.Contains(err.Error(), "PGRST116") {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("移動距離取得失敗: %w", err)
 	}
 
 	var movement model.Movement
