@@ -42,6 +42,11 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
+	if err := validateNameAndGender(req.Name, req.Gender); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	if err := h.repo.UpdateProfile(userID, req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィール更新に失敗しました"})
 		return

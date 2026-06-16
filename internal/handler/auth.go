@@ -27,6 +27,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	if err := validateNameAndGender(req.Name, req.Gender); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	session, err := h.repo.Register(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "登録に失敗しました"})
