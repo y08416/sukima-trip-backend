@@ -21,3 +21,10 @@ type ArriveResponse struct {
 	WikiSummary string `json:"wiki_summary"`
 	PhotoURL    string `json:"photo_url"`
 }
+
+type NearestSpotResponse struct {
+	PlaceID    string  `json:"place_id"`
+	Name       string  `json:"name"`
+	DistanceKm float64 `json:"distance_km"`
+	Bearing    float64 `json:"bearing"`
+}

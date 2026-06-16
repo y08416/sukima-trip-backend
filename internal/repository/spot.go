@@ -150,6 +150,39 @@ func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
 	return result.Extract, result.Thumbnail.Source
 }
 
+func (r *SpotRepository) GetNearestSpot(lat, lng float64) (*model.NearestSpotResponse, error) {
+	spots, err := r.GetNearbySpots(lat, lng)
+	if err != nil {
+		return nil, err
+	}
+	if len(spots) == 0 {
+		return nil, nil
+	}
+
+	nearest := spots[0]
+	for _, s := range spots[1:] {
+		if s.DistanceKm < nearest.DistanceKm {
+			nearest = s
+		}
+	}
+
+	return &model.NearestSpotResponse{
+		PlaceID:    nearest.PlaceID,
+		Name:       nearest.Name,
+		DistanceKm: nearest.DistanceKm,
+		Bearing:    CalcBearing(lat, lng, nearest.Lat, nearest.Lng),
+	}, nil
+}
+
+func CalcBearing(lat1, lng1, lat2, lng2 float64) float64 {
+	dLng := (lng2 - lng1) * math.Pi / 180
+	lat1R := lat1 * math.Pi / 180
+	lat2R := lat2 * math.Pi / 180
+	y := math.Sin(dLng) * math.Cos(lat2R)
+	x := math.Cos(lat1R)*math.Sin(lat2R) - math.Sin(lat1R)*math.Cos(lat2R)*math.Cos(dLng)
+	return math.Mod(math.Atan2(y, x)*180/math.Pi+360, 360)
+}
+
 func CalcDistance(lat1, lng1, lat2, lng2 float64) float64 {
 	const earthRadiusKm = 6371.0
 	dLat := (lat2 - lat1) * math.Pi / 180

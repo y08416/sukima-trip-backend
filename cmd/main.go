@@ -85,6 +85,7 @@ func main() {
 		api.POST("/visited-places", visitedPlaceHandler.Save)
 
 		api.GET("/spots", spotHandler.GetSpots)
+		api.GET("/spots/nearest", spotHandler.GetNearestSpot)
 		api.POST("/spots/:id/arrive", spotHandler.Arrive)
 		api.POST("/spots/:id/like", likeHandler.Save)
 		api.DELETE("/spots/:id/like", likeHandler.Delete)
