@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"sukima-trip-backend/internal/model"
 	"sukima-trip-backend/internal/repository"
 
@@ -64,15 +63,36 @@ func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	ext := filepath.Ext(file.Filename)
-	fileName := fmt.Sprintf("%s%s", userID, ext)
-
 	src, err := file.Open()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ファイルの読み込みに失敗しました"})
 		return
 	}
 	defer src.Close()
+
+	buf := make([]byte, 512)
+	n, err := src.Read(buf)
+	if n == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ファイルが空です"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ファイルの読み込みに失敗しました"})
+		return
+	}
+	mimeType := detectImageMime(buf[:n])
+	extMap := map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+	ext, ok := extMap[mimeType]
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "jpg、png、webp 形式の画像のみアップロードできます"})
+		return
+	}
+	fileName := fmt.Sprintf("%s%s", userID, ext)
+
+	if _, err := src.Seek(0, 0); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ファイルの読み込みに失敗しました"})
+		return
+	}
 
 	_, err = h.db.Storage.UploadFile("avatars", fileName, src)
 	if err != nil {
