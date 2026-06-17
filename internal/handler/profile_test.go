@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -66,6 +67,75 @@ func TestUpdateProfile_Validation(t *testing.T) {
 			w := httptest.NewRecorder()
 			req, _ := http.NewRequest("PUT", "/profile", bytes.NewBuffer(b))
 			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+
+			if w.Code != tc.wantStatus {
+				t.Errorf("status: got %d, want %d (body: %s)", w.Code, tc.wantStatus, w.Body.String())
+			}
+			if tc.wantError != "" {
+				var res map[string]string
+				json.Unmarshal(w.Body.Bytes(), &res)
+				if res["error"] != tc.wantError {
+					t.Errorf("error: got %q, want %q", res["error"], tc.wantError)
+				}
+			}
+		})
+	}
+}
+
+func setupAvatarRouter() *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.Default()
+	h := &ProfileHandler{}
+	r.POST("/profile/avatar", func(c *gin.Context) {
+		c.Set("user_id", "test-user")
+		h.UploadAvatar(c)
+	})
+	return r
+}
+
+func TestUploadAvatar_MimeValidation(t *testing.T) {
+	r := setupAvatarRouter()
+
+	jpegBytes := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10}
+	pngBytes := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	textBytes := []byte("this is not an image")
+
+	cases := []struct {
+		name       string
+		content    []byte
+		wantStatus int
+		wantError  string
+	}{
+		{
+			name:       "JPEGは通過",
+			content:    jpegBytes,
+			wantStatus: http.StatusInternalServerError,
+		},
+		{
+			name:       "PNGは通過",
+			content:    pngBytes,
+			wantStatus: http.StatusInternalServerError,
+		},
+		{
+			name:       "テキストは拒否",
+			content:    textBytes,
+			wantStatus: http.StatusBadRequest,
+			wantError:  "jpg または png 形式の画像のみアップロードできます",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+			part, _ := writer.CreateFormFile("avatar", "test.jpg")
+			part.Write(tc.content)
+			writer.Close()
+
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("POST", "/profile/avatar", body)
+			req.Header.Set("Content-Type", writer.FormDataContentType())
 			r.ServeHTTP(w, req)
 
 			if w.Code != tc.wantStatus {
