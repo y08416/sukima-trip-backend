@@ -1,6 +1,20 @@
 package handler
 
-import "errors"
+import (
+	"errors"
+	"net/http"
+)
+
+// detectImageMime はバイト列からMIMEタイプを判定する。
+// WebPはGo標準のDetectContentTypeが未対応のため個別にチェックする。
+func detectImageMime(buf []byte) string {
+	if len(buf) >= 12 &&
+		buf[0] == 'R' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'F' &&
+		buf[8] == 'W' && buf[9] == 'E' && buf[10] == 'B' && buf[11] == 'P' {
+		return "image/webp"
+	}
+	return http.DetectContentType(buf)
+}
 
 func validateNameAndGender(name, gender string) error {
 	if len([]rune(name)) > 50 {

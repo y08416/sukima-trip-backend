@@ -72,17 +72,21 @@ func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
 
 	buf := make([]byte, 512)
 	n, err := src.Read(buf)
+	if n == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ファイルが空です"})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ファイルの読み込みに失敗しました"})
 		return
 	}
-	mimeType := http.DetectContentType(buf[:n])
-	if mimeType != "image/jpeg" && mimeType != "image/png" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "jpg または png 形式の画像のみアップロードできます"})
+	mimeType := detectImageMime(buf[:n])
+	extMap := map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+	ext, ok := extMap[mimeType]
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "jpg、png、webp 形式の画像のみアップロードできます"})
 		return
 	}
-
-	ext := map[string]string{"image/jpeg": ".jpg", "image/png": ".png"}[mimeType]
 	fileName := fmt.Sprintf("%s%s", userID, ext)
 
 	if _, err := src.Seek(0, 0); err != nil {
