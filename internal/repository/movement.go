@@ -73,24 +73,19 @@ func (r *MovementRepository) Save(userID string, req model.SaveMovementRequest) 
 }
 
 func (r *MovementRepository) GetTotal(userID string) (float64, error) {
-	data, _, err := r.client.From("movements").
-		Select("real_distance_km", "", false).
-		Eq("user_id", userID).
-		Execute()
-	if err != nil {
-		return 0, err
-	}
+	result := r.client.Rpc("get_total_distance", "", map[string]interface{}{
+		"p_user_id": userID,
+	})
 
-	var rows []struct {
-		RealDistanceKm float64 `json:"real_distance_km"`
-	}
-	if err := json.Unmarshal(data, &rows); err != nil {
-		return 0, err
-	}
-
+	trimmed := strings.TrimSpace(result)
 	var total float64
-	for _, row := range rows {
-		total += row.RealDistanceKm
+	if err := json.Unmarshal([]byte(trimmed), &total); err == nil {
+		return total, nil
 	}
-	return total, nil
+
+	var rpcErr rpcError
+	if err := json.Unmarshal([]byte(trimmed), &rpcErr); err != nil {
+		return 0, fmt.Errorf("合計距離取得失敗: レスポンス解析エラー: %w", err)
+	}
+	return 0, fmt.Errorf("合計距離取得失敗: %s", rpcErr.Message)
 }
