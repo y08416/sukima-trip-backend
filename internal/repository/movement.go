@@ -79,8 +79,13 @@ func (r *MovementRepository) GetTotal(userID string) (float64, error) {
 
 	trimmed := strings.TrimSpace(result)
 	var total float64
-	if err := json.Unmarshal([]byte(trimmed), &total); err != nil {
-		return 0, fmt.Errorf("合計距離取得失敗: %w", err)
+	if err := json.Unmarshal([]byte(trimmed), &total); err == nil {
+		return total, nil
 	}
-	return total, nil
+
+	var rpcErr rpcError
+	if err := json.Unmarshal([]byte(trimmed), &rpcErr); err != nil {
+		return 0, fmt.Errorf("合計距離取得失敗: レスポンス解析エラー: %w", err)
+	}
+	return 0, fmt.Errorf("合計距離取得失敗: %s", rpcErr.Message)
 }
