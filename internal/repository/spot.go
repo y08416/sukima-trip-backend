@@ -49,6 +49,7 @@ func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) 
 	}
 
 	var result struct {
+		Status  string `json:"status"`
 		Results []struct {
 			PlaceID  string `json:"place_id"`
 			Name     string `json:"name"`
@@ -63,6 +64,9 @@ func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) 
 
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("データ変換失敗: %w", err)
+	}
+	if result.Status != "OK" && result.Status != "ZERO_RESULTS" {
+		return nil, fmt.Errorf("Places API エラー: %s", result.Status)
 	}
 
 	spots := make([]model.Spot, 0, len(result.Results))
@@ -94,6 +98,7 @@ func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, err
 	}
 
 	var result struct {
+		Status string `json:"status"`
 		Result struct {
 			Geometry struct {
 				Location struct {
@@ -107,14 +112,11 @@ func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, err
 	if err := json.Unmarshal(body, &result); err != nil {
 		return 0, 0, fmt.Errorf("データ変換失敗: %w", err)
 	}
-
-	lat := result.Result.Geometry.Location.Lat
-	lng := result.Result.Geometry.Location.Lng
-	if lat == 0 && lng == 0 {
-		return 0, 0, fmt.Errorf("スポット座標の取得に失敗しました: place_id=%s", placeID)
+	if result.Status != "OK" {
+		return 0, 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
 	}
 
-	return lat, lng, nil
+	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, nil
 }
 
 func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
