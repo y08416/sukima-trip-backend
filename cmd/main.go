@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"log"
+	"os"
 	"sukima-trip-backend/config"
 	"sukima-trip-backend/internal/handler"
 	"sukima-trip-backend/internal/middleware"
@@ -14,9 +16,14 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Fatalf(".envファイルの読み込みに失敗しました: %v", err)
+	}
 
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("%v", err)
+	}
 
 	db, err := supa.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey, nil)
 	if err != nil {
