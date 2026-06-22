@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"sukima-trip-backend/internal/model"
 	"sukima-trip-backend/internal/repository"
@@ -38,6 +39,10 @@ func (h *FavoriteHandler) Save(c *gin.Context) {
 	}
 
 	if err := h.repo.Save(userID, req); err != nil {
+		if errors.Is(err, repository.ErrAlreadyFavorited) {
+			c.JSON(http.StatusConflict, gin.H{"error": "すでにお気に入り済みです"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お気に入りの保存に失敗しました"})
 		return
 	}
@@ -50,6 +55,10 @@ func (h *FavoriteHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.repo.Delete(userID, id); err != nil {
+		if errors.Is(err, repository.ErrFavoriteNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "お気に入りが見つかりません"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お気に入りの削除に失敗しました"})
 		return
 	}

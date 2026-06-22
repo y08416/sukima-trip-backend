@@ -9,6 +9,7 @@ import (
 )
 
 var ErrAlreadyLiked = errors.New("already liked")
+var ErrLikeNotFound = errors.New("like not found")
 
 type LikeRepository struct {
 	client *supa.Client
@@ -36,13 +37,16 @@ func (r *LikeRepository) Save(userID, placeID, placeName string) error {
 }
 
 func (r *LikeRepository) Delete(userID, placeID string) error {
-	_, _, err := r.client.From("spot_likes").
+	data, _, err := r.client.From("spot_likes").
 		Delete("", "").
 		Eq("user_id", userID).
 		Eq("place_id", placeID).
 		Execute()
 	if err != nil {
 		return fmt.Errorf("いいね削除失敗: %w", err)
+	}
+	if string(data) == "[]" {
+		return ErrLikeNotFound
 	}
 	return nil
 }

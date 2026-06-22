@@ -2,12 +2,17 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"sukima-trip-backend/internal/model"
 
 	"github.com/supabase-community/postgrest-go"
 	supa "github.com/supabase-community/supabase-go"
 )
+
+var ErrAlreadyFavorited = errors.New("already favorited")
+var ErrFavoriteNotFound = errors.New("favorite not found")
 
 type FavoriteRepository struct {
 	client *supa.Client
@@ -43,19 +48,25 @@ func (r *FavoriteRepository) Save(userID string, req model.SaveFavoriteRequest) 
 		}, false, "", "", "").
 		Execute()
 	if err != nil {
+		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "duplicate key") {
+			return ErrAlreadyFavorited
+		}
 		return fmt.Errorf("お気に入り保存失敗: %w", err)
 	}
 	return nil
 }
 
 func (r *FavoriteRepository) Delete(userID, id string) error {
-	_, _, err := r.client.From("favorites").
+	data, _, err := r.client.From("favorites").
 		Delete("", "").
 		Eq("user_id", userID).
 		Eq("id", id).
 		Execute()
 	if err != nil {
 		return fmt.Errorf("お気に入り削除失敗: %w", err)
+	}
+	if string(data) == "[]" {
+		return ErrFavoriteNotFound
 	}
 	return nil
 }

@@ -45,6 +45,10 @@ func (h *LikeHandler) Delete(c *gin.Context) {
 	placeID := c.Param("id")
 
 	if err := h.repo.Delete(userID, placeID); err != nil {
+		if errors.Is(err, repository.ErrLikeNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "いいねが見つかりません"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "いいね削除に失敗しました"})
 		return
 	}
