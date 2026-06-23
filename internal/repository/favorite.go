@@ -42,9 +42,11 @@ func (r *FavoriteRepository) GetAll(userID string) ([]model.Favorite, error) {
 func (r *FavoriteRepository) Save(userID string, req model.SaveFavoriteRequest) error {
 	_, _, err := r.client.From("favorites").
 		Insert(map[string]interface{}{
-			"user_id":    userID,
-			"place_id":   req.PlaceID,
-			"place_name": req.PlaceName,
+			"user_id":   userID,
+			"place_id":  req.PlaceID,
+			"name":      req.PlaceName,
+			"latitude":  req.Lat,
+			"longitude": req.Lng,
 		}, false, "", "", "").
 		Execute()
 	if err != nil {
