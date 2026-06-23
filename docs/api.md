@@ -449,7 +449,9 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
     "id": "uuid",
     "user_id": "uuid",
     "place_id": "ChIJ...",
-    "place_name": "清水寺",
+    "name": "清水寺",
+    "latitude": 34.9949,
+    "longitude": 135.7851,
     "created_at": "2026-05-15T12:00:00Z"
   }
 ]
@@ -464,7 +466,9 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 ```json
 {
   "place_id": "ChIJ...",
-  "place_name": "清水寺"
+  "place_name": "清水寺",
+  "latitude": 34.9949,
+  "longitude": 135.7851
 }
 ```
 
