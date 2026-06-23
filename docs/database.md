@@ -100,7 +100,9 @@ Supabase Auth が認証情報（メール・パスワード）を管理するた
 | id | uuid | NO | 主キー |
 | user_id | uuid | NO | users への外部キー |
 | place_id | text | NO | Google Places API の place_id |
-| place_name | text | NO | スポット名 |
+| name | text | NO | スポット名 |
+| latitude | float | NO | 緯度 |
+| longitude | float | NO | 経度 |
 | created_at | timestamp | NO | 追加日時 |
 
 ---
