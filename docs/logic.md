@@ -61,13 +61,14 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 
 ```
 1. リクエストのユーザー座標（lat/lng）を受け取る
-2. place_id を使って Google Places Details API でスポットの実座標を取得
+2. place_id を使って Google Places Details API でスポットの実座標と user_ratings_total を取得
 3. ユーザー座標とスポット座標の距離をハバーサイン公式で計算
 4. 距離 > 100m → 400 Bad Request を返す（到着していない）
 5. 距離 ≦ 100m → 以下を実行
-   a. `arrive_spot` RPC で visited_places への記録と coins への加算を1トランザクションで実行（残高を返す）
-   b. Wikipedia REST API でスポット名の概要・画像 URL を取得
-   c. コイン残高・Wikipedia 情報をレスポンスに含めて返す
+   a. user_ratings_total に応じて獲得コイン枚数を算出（CalcCoinFromRatings）
+   b. `arrive_spot` RPC で visited_places への記録と coins への加算を1トランザクションで実行（残高を返す）
+   c. Wikipedia REST API でスポット名の概要・画像 URL を取得
+   d. コイン残高・Wikipedia 情報をレスポンスに含めて返す
 ```
 
 到着判定をバックエンドで行う理由：フロントが座標を偽装してコインを不正取得することを防ぐため。
@@ -75,7 +76,16 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 ### コイン付与
 
 - トリガー：スポット到着（距離検証 OK 時のみ）
-- 付与枚数：10 枚固定（`repository.CoinPerArrive = 10`）
+- 付与枚数：Google Places の `user_ratings_total`（レビュー数）に応じて傾斜
+
+  | 有名度 | 条件 | 獲得コイン |
+  |--------|------|-----------|
+  | 超有名 | 5,000件以上 | 30枚 |
+  | 有名   | 1,000〜4,999件 | 20枚 |
+  | 普通   | 1,000件未満 | 10枚 |
+
+  実装: `repository.CalcCoinFromRatings`（`user_ratings_total` 未取得時は 0 → 10枚にフォールバック）
+
 - 処理場所：バックエンド（`arrive_spot` RPC 内で `coins` テーブルを原子的に更新）
 
 ---

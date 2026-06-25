@@ -372,13 +372,14 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 ```json
 {
   "message": "到着を記録しました",
-  "coin_earned": 10,
+  "coin_earned": 20,
   "balance": 110,
   "wiki_summary": "清水寺（きよみずでら）は、京都府京都市東山区にある...",
   "photo_url": "https://upload.wikimedia.org/..."
 }
 ```
 
+> `coin_earned` はスポットの Google Places レビュー数に応じて変動する（10 / 20 / 30）
 > `wiki_summary` / `photo_url` は Wikipedia に記事がない場合は空文字で返る
 
 **エラー** `400`
