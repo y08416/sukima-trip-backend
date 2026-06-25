@@ -36,7 +36,7 @@ func (h *MovementHandler) GetToday(c *gin.Context) {
 	}
 
 	virtualDistanceKm := movement.RealDistanceKm * 10
-	remainingDistanceKm := virtualDistanceKm - movement.UsedVirtualDistanceKm
+	remainingDistanceKm := max(0, virtualDistanceKm-movement.UsedVirtualDistanceKm)
 
 	c.JSON(http.StatusOK, model.MovementResponse{
 		Date:                  movement.Date,
@@ -68,7 +68,7 @@ func (h *MovementHandler) SaveToday(c *gin.Context) {
 	}
 
 	virtualDistanceKm := movement.RealDistanceKm * 10
-	remainingDistanceKm := virtualDistanceKm - movement.UsedVirtualDistanceKm
+	remainingDistanceKm := max(0, virtualDistanceKm-movement.UsedVirtualDistanceKm)
 
 	c.JSON(http.StatusOK, model.MovementResponse{
 		Date:                  movement.Date,

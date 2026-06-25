@@ -198,14 +198,18 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 | フィールド | 型 | 必須 | 備考 |
 |-----------|-----|------|------|
-| real_distance_km | float | ✓ | 実際に歩いた距離（km） |
+| real_distance_km | float | | 実際に歩いた距離（km）。省略時は `0` |
 | used_virtual_distance_km | float | | Street View で消費した仮想距離（km） |
 
 **レスポンス** `200 OK`
 
 ```json
 {
-  "message": "保存しました"
+  "date": "2026-06-25",
+  "real_distance_km": 1.5,
+  "virtual_distance_km": 15.0,
+  "used_virtual_distance_km": 1.0,
+  "remaining_distance_km": 14.0
 }
 ```
 
