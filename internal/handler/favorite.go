@@ -5,16 +5,18 @@ import (
 	"net/http"
 	"sukima-trip-backend/internal/model"
 	"sukima-trip-backend/internal/repository"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 )
 
 type FavoriteHandler struct {
-	repo *repository.FavoriteRepository
+	repo     *repository.FavoriteRepository
+	spotRepo *repository.SpotRepository
 }
 
-func NewFavoriteHandler(repo *repository.FavoriteRepository) *FavoriteHandler {
-	return &FavoriteHandler{repo: repo}
+func NewFavoriteHandler(repo *repository.FavoriteRepository, spotRepo *repository.SpotRepository) *FavoriteHandler {
+	return &FavoriteHandler{repo: repo, spotRepo: spotRepo}
 }
 
 func (h *FavoriteHandler) GetAll(c *gin.Context) {
@@ -25,6 +27,20 @@ func (h *FavoriteHandler) GetAll(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お気に入りの取得に失敗しました"})
 		return
 	}
+
+	var wg sync.WaitGroup
+	for i := range favorites {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			total, err := h.spotRepo.GetUserRatingsTotal(favorites[i].PlaceID)
+			if err != nil {
+				total = 0
+			}
+			favorites[i].CoinAmount = repository.CalcCoinFromRatings(total)
+		}(i)
+	}
+	wg.Wait()
 
 	c.JSON(http.StatusOK, favorites)
 }

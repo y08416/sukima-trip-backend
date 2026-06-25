@@ -170,6 +170,38 @@ func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
 	return result.Extract, result.Thumbnail.Source
 }
 
+func (r *SpotRepository) GetUserRatingsTotal(placeID string) (int, error) {
+	endpoint := fmt.Sprintf("%s?place_id=%s&fields=user_ratings_total&key=%s",
+		placesDetailsAPIURL, placeID, r.apiKey)
+
+	resp, err := r.httpClient.Get(endpoint)
+	if err != nil {
+		return 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("レスポンス読み込み失敗: %w", err)
+	}
+
+	var result struct {
+		Status string `json:"status"`
+		Result struct {
+			UserRatingsTotal int `json:"user_ratings_total"`
+		} `json:"result"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return 0, fmt.Errorf("データ変換失敗: %w", err)
+	}
+	if result.Status != "OK" {
+		return 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
+	}
+
+	return result.Result.UserRatingsTotal, nil
+}
+
 func (r *SpotRepository) GetNearestSpot(lat, lng float64) (*model.NearestSpotResponse, error) {
 	spots, err := r.GetNearbySpots(lat, lng)
 	if err != nil {
