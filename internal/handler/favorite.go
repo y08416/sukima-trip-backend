@@ -28,12 +28,13 @@ func (h *FavoriteHandler) GetAll(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	var wg sync.WaitGroup
 	for i := range favorites {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			total, err := h.spotRepo.GetUserRatingsTotal(favorites[i].PlaceID)
+			total, err := h.spotRepo.GetUserRatingsTotal(ctx, favorites[i].PlaceID)
 			if err != nil {
 				total = 0
 			}

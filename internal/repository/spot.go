@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,11 +18,11 @@ const (
 	searchRadius        = 5000
 	ArriveRadiusKm      = 0.1
 
-	coinDefault    = 10
-	coinPopular    = 20
+	coinDefault     = 10
+	coinPopular     = 20
 	coinVeryPopular = 30
 
-	ratingsThresholdPopular    = 1000
+	ratingsThresholdPopular     = 1000
 	ratingsThresholdVeryPopular = 5000
 )
 
@@ -48,6 +49,28 @@ func NewSpotRepository(apiKey string) *SpotRepository {
 		httpClient: &http.Client{Timeout: 5 * time.Second},
 		wikiClient: &http.Client{Timeout: 3 * time.Second},
 	}
+}
+
+func (r *SpotRepository) fetchPlaceDetails(ctx context.Context, placeID, fields string) ([]byte, error) {
+	endpoint := fmt.Sprintf("%s?place_id=%s&fields=%s&key=%s",
+		placesDetailsAPIURL, placeID, fields, r.apiKey)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("リクエスト生成失敗: %w", err)
+	}
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("レスポンス読み込み失敗: %w", err)
+	}
+	return body, nil
 }
 
 func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) {
@@ -99,19 +122,10 @@ func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) 
 	return spots, nil
 }
 
-func (r *SpotRepository) GetPlaceLocation(placeID string) (lat, lng float64, userRatingsTotal int, err error) {
-	endpoint := fmt.Sprintf("%s?place_id=%s&fields=geometry,user_ratings_total&key=%s",
-		placesDetailsAPIURL, placeID, r.apiKey)
-
-	resp, err := r.httpClient.Get(endpoint)
+func (r *SpotRepository) GetPlaceLocation(ctx context.Context, placeID string) (lat, lng float64, userRatingsTotal int, err error) {
+	body, err := r.fetchPlaceDetails(ctx, placeID, "geometry,user_ratings_total")
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("レスポンス読み込み失敗: %w", err)
+		return 0, 0, 0, err
 	}
 
 	var result struct {
@@ -135,6 +149,29 @@ func (r *SpotRepository) GetPlaceLocation(placeID string) (lat, lng float64, use
 	}
 
 	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, result.Result.UserRatingsTotal, nil
+}
+
+func (r *SpotRepository) GetUserRatingsTotal(ctx context.Context, placeID string) (int, error) {
+	body, err := r.fetchPlaceDetails(ctx, placeID, "user_ratings_total")
+	if err != nil {
+		return 0, err
+	}
+
+	var result struct {
+		Status string `json:"status"`
+		Result struct {
+			UserRatingsTotal int `json:"user_ratings_total"`
+		} `json:"result"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return 0, fmt.Errorf("データ変換失敗: %w", err)
+	}
+	if result.Status != "OK" {
+		return 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
+	}
+
+	return result.Result.UserRatingsTotal, nil
 }
 
 func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
@@ -168,38 +205,6 @@ func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
 	}
 
 	return result.Extract, result.Thumbnail.Source
-}
-
-func (r *SpotRepository) GetUserRatingsTotal(placeID string) (int, error) {
-	endpoint := fmt.Sprintf("%s?place_id=%s&fields=user_ratings_total&key=%s",
-		placesDetailsAPIURL, placeID, r.apiKey)
-
-	resp, err := r.httpClient.Get(endpoint)
-	if err != nil {
-		return 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, fmt.Errorf("レスポンス読み込み失敗: %w", err)
-	}
-
-	var result struct {
-		Status string `json:"status"`
-		Result struct {
-			UserRatingsTotal int `json:"user_ratings_total"`
-		} `json:"result"`
-	}
-
-	if err := json.Unmarshal(body, &result); err != nil {
-		return 0, fmt.Errorf("データ変換失敗: %w", err)
-	}
-	if result.Status != "OK" {
-		return 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
-	}
-
-	return result.Result.UserRatingsTotal, nil
 }
 
 func (r *SpotRepository) GetNearestSpot(lat, lng float64) (*model.NearestSpotResponse, error) {
