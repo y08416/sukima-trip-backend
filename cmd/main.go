@@ -52,7 +52,7 @@ func main() {
 	likeHandler := handler.NewLikeHandler(likeRepo)
 
 	favoriteRepo := repository.NewFavoriteRepository(db)
-	favoriteHandler := handler.NewFavoriteHandler(favoriteRepo)
+	favoriteHandler := handler.NewFavoriteHandler(favoriteRepo, spotRepo)
 
 	r := gin.Default()
 

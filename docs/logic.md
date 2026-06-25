@@ -139,7 +139,7 @@ GET https://ja.wikipedia.org/api/rest_v1/page/summary/{スポット名}
 | 操作 | 処理 |
 |------|------|
 | 追加 | `place_id` / `name` / `latitude` / `longitude` を favorites テーブルに INSERT |
-| 一覧取得 | `user_id` でフィルタして `created_at` 降順で返す |
+| 一覧取得 | `user_id` でフィルタして `created_at` 降順で返す。各スポットの `place_id` に対して Places Details API を並行呼び出しし、`user_ratings_total` から `CalcCoinFromRatings` で算出した `coin_amount` を付与して返す |
 | 削除 | favorites テーブルのレコード ID（uuid）で DELETE |
 
 ### いいね（spot_likes）

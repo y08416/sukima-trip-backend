@@ -102,7 +102,7 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	spotLat, spotLng, userRatingsTotal, err := h.spotRepo.GetPlaceLocation(placeID)
+	spotLat, spotLng, userRatingsTotal, err := h.spotRepo.GetPlaceLocation(c.Request.Context(), placeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
 		return
