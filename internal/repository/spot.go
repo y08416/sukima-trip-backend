@@ -16,8 +16,25 @@ const (
 	placesDetailsAPIURL = "https://maps.googleapis.com/maps/api/place/details/json"
 	searchRadius        = 5000
 	ArriveRadiusKm      = 0.1
-	CoinPerArrive       = 10
+
+	coinDefault    = 10
+	coinPopular    = 20
+	coinVeryPopular = 30
+
+	ratingsThresholdPopular    = 1000
+	ratingsThresholdVeryPopular = 5000
 )
+
+func CalcCoinFromRatings(userRatingsTotal int) int {
+	switch {
+	case userRatingsTotal >= ratingsThresholdVeryPopular:
+		return coinVeryPopular
+	case userRatingsTotal >= ratingsThresholdPopular:
+		return coinPopular
+	default:
+		return coinDefault
+	}
+}
 
 type SpotRepository struct {
 	apiKey     string
@@ -82,19 +99,19 @@ func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) 
 	return spots, nil
 }
 
-func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, error) {
-	endpoint := fmt.Sprintf("%s?place_id=%s&fields=geometry&key=%s",
+func (r *SpotRepository) GetPlaceLocation(placeID string) (lat, lng float64, userRatingsTotal int, err error) {
+	endpoint := fmt.Sprintf("%s?place_id=%s&fields=geometry,user_ratings_total&key=%s",
 		placesDetailsAPIURL, placeID, r.apiKey)
 
 	resp, err := r.httpClient.Get(endpoint)
 	if err != nil {
-		return 0, 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
+		return 0, 0, 0, fmt.Errorf("Places Details API呼び出し失敗: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, 0, fmt.Errorf("レスポンス読み込み失敗: %w", err)
+		return 0, 0, 0, fmt.Errorf("レスポンス読み込み失敗: %w", err)
 	}
 
 	var result struct {
@@ -106,17 +123,18 @@ func (r *SpotRepository) GetPlaceLocation(placeID string) (float64, float64, err
 					Lng float64 `json:"lng"`
 				} `json:"location"`
 			} `json:"geometry"`
+			UserRatingsTotal int `json:"user_ratings_total"`
 		} `json:"result"`
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		return 0, 0, fmt.Errorf("データ変換失敗: %w", err)
+		return 0, 0, 0, fmt.Errorf("データ変換失敗: %w", err)
 	}
 	if result.Status != "OK" {
-		return 0, 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
+		return 0, 0, 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
 	}
 
-	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, nil
+	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, result.Result.UserRatingsTotal, nil
 }
 
 func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
