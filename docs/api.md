@@ -459,10 +459,13 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
     "name": "清水寺",
     "latitude": 34.9949,
     "longitude": 135.7851,
-    "created_at": "2026-05-15T12:00:00Z"
+    "created_at": "2026-05-15T12:00:00Z",
+    "coin_amount": 20
   }
 ]
 ```
+
+> `coin_amount` はスポットの Google Places レビュー数に応じた獲得コイン枚数（10 / 20 / 30）。Places API 取得失敗時は 10 を返す
 
 ---
 
