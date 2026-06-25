@@ -36,7 +36,7 @@ func (h *MovementHandler) GetToday(c *gin.Context) {
 	}
 
 	virtualDistanceKm := movement.RealDistanceKm * 10
-	remainingDistanceKm := virtualDistanceKm - movement.UsedVirtualDistanceKm
+	remainingDistanceKm := max(0, virtualDistanceKm-movement.UsedVirtualDistanceKm)
 
 	c.JSON(http.StatusOK, model.MovementResponse{
 		Date:                  movement.Date,
@@ -61,7 +61,22 @@ func (h *MovementHandler) SaveToday(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "保存しました"})
+	movement, err := h.repo.GetToday(userID)
+	if err != nil || movement == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "移動距離の取得に失敗しました"})
+		return
+	}
+
+	virtualDistanceKm := movement.RealDistanceKm * 10
+	remainingDistanceKm := max(0, virtualDistanceKm-movement.UsedVirtualDistanceKm)
+
+	c.JSON(http.StatusOK, model.MovementResponse{
+		Date:                  movement.Date,
+		RealDistanceKm:        movement.RealDistanceKm,
+		VirtualDistanceKm:     virtualDistanceKm,
+		UsedVirtualDistanceKm: movement.UsedVirtualDistanceKm,
+		RemainingDistanceKm:   remainingDistanceKm,
+	})
 }
 
 func (h *MovementHandler) GetTotal(c *gin.Context) {

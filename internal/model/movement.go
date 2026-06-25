@@ -17,7 +17,7 @@ type MovementResponse struct {
 }
 
 type SaveMovementRequest struct {
-	RealDistanceKm        float64 `json:"real_distance_km" binding:"required"`
+	RealDistanceKm        float64 `json:"real_distance_km"`
 	UsedVirtualDistanceKm float64 `json:"used_virtual_distance_km"`
 }
 

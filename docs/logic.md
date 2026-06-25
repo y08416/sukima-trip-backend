@@ -12,7 +12,8 @@
 
 ```
 仮想距離 (virtual_distance_km)   = real_distance_km × 10
-残り仮想距離 (remaining_distance_km) = virtual_distance_km - used_virtual_distance_km
+残り仮想距離 (remaining_distance_km) = max(0, virtual_distance_km - used_virtual_distance_km)
+※ used_virtual_distance_km が virtual_distance_km を超えても、レスポンスでは 0 未満にならない
 ```
 
 **例:** 1.5km 歩いた場合 → 仮想距離 15km。Street View で 3km 消費 → 残り 12km。
