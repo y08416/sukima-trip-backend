@@ -102,7 +102,7 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	spotLat, spotLng, err := h.spotRepo.GetPlaceLocation(placeID)
+	spotLat, spotLng, userRatingsTotal, err := h.spotRepo.GetPlaceLocation(placeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
 		return
@@ -113,7 +113,9 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	balance, err := h.visitedRepo.SaveAndAddCoin(userID, placeID, req.PlaceName, repository.CoinPerArrive)
+	coinEarned := repository.CalcCoinFromRatings(userRatingsTotal)
+
+	balance, err := h.visitedRepo.SaveAndAddCoin(userID, placeID, req.PlaceName, coinEarned)
 	if err != nil {
 		if errors.Is(err, repository.ErrAlreadyVisited) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "このスポットにはすでに到着済みです"})
@@ -127,7 +129,7 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.ArriveResponse{
 		Message:     "到着を記録しました",
-		CoinEarned:  repository.CoinPerArrive,
+		CoinEarned:  coinEarned,
 		Balance:     balance,
 		WikiSummary: wikiSummary,
 		PhotoURL:    photoURL,
