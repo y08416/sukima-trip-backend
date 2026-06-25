@@ -187,6 +187,8 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 移動距離を保存・加算する。当日データがあれば加算、なければ新規作成。
 
+> **フロント連携注意**: レスポンスは `MovementResponse` を返す。保存後に GET で再取得する必要はない。`real_distance_km` は省略可（Street View など歩行なしで仮想距離だけ消費するケースを想定）。
+
 **リクエスト**
 
 ```json
