@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"sukima-trip-backend/internal/model"
 	"sukima-trip-backend/internal/repository"
@@ -60,6 +61,7 @@ func (h *MovementHandler) SaveToday(c *gin.Context) {
 
 	movement, err := h.repo.Save(userID, req)
 	if err != nil {
+		log.Printf("[SaveToday] Save失敗: userID=%s real=%.6f used=%.6f err=%v", userID, req.RealDistanceKm, req.UsedVirtualDistanceKm, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "移動距離の保存に失敗しました"})
 		return
 	}
