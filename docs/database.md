@@ -42,6 +42,8 @@ Supabase Auth が認証情報（メール・パスワード）を管理するた
 | used_virtual_distance_km | float | NO | Street View で消費した仮想距離（km） |
 | created_at | timestamp | NO | 作成日時 |
 
+**制約**: `UNIQUE (user_id, date)` — 同一ユーザーの同日レコードは1件のみ
+
 **計算式**
 
 ```

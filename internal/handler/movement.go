@@ -56,14 +56,9 @@ func (h *MovementHandler) SaveToday(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Save(userID, req); err != nil {
+	movement, err := h.repo.Save(userID, req)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "移動距離の保存に失敗しました"})
-		return
-	}
-
-	movement, err := h.repo.GetToday(userID)
-	if err != nil || movement == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "移動距離の取得に失敗しました"})
 		return
 	}
 
