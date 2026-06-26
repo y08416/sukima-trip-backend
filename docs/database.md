@@ -47,7 +47,7 @@ Supabase Auth が認証情報（メール・パスワード）を管理するた
 **計算式**
 
 ```
-仮想距離           = real_distance_km × 10
+仮想距離           = real_distance_km × 5
 残り仮想距離       = 仮想距離 - used_virtual_distance_km
 ```
 

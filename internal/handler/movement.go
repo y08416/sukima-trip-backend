@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const virtualDistanceMultiplier = 5
+
 type MovementHandler struct {
 	repo *repository.MovementRepository
 }
@@ -35,7 +37,7 @@ func (h *MovementHandler) GetToday(c *gin.Context) {
 		return
 	}
 
-	virtualDistanceKm := movement.RealDistanceKm * 10
+	virtualDistanceKm := movement.RealDistanceKm * virtualDistanceMultiplier
 	remainingDistanceKm := max(0, virtualDistanceKm-movement.UsedVirtualDistanceKm)
 
 	c.JSON(http.StatusOK, model.MovementResponse{
@@ -62,7 +64,7 @@ func (h *MovementHandler) SaveToday(c *gin.Context) {
 		return
 	}
 
-	virtualDistanceKm := movement.RealDistanceKm * 10
+	virtualDistanceKm := movement.RealDistanceKm * virtualDistanceMultiplier
 	remainingDistanceKm := max(0, virtualDistanceKm-movement.UsedVirtualDistanceKm)
 
 	c.JSON(http.StatusOK, model.MovementResponse{

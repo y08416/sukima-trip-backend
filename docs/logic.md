@@ -11,12 +11,12 @@
 リアルの移動距離を仮想距離に変換して Street View 探索に使用する。
 
 ```
-仮想距離 (virtual_distance_km)   = real_distance_km × 10
+仮想距離 (virtual_distance_km)   = real_distance_km × 5
 残り仮想距離 (remaining_distance_km) = max(0, virtual_distance_km - used_virtual_distance_km)
 ※ used_virtual_distance_km が virtual_distance_km を超えても、レスポンスでは 0 未満にならない
 ```
 
-**例:** 1.5km 歩いた場合 → 仮想距離 15km。Street View で 3km 消費 → 残り 12km。
+**例:** 1.5km 歩いた場合 → 仮想距離 7.5km。Street View で 3km 消費 → 残り 4.5km。
 
 ### 保存・加算ルール
 

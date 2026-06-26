@@ -175,9 +175,9 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 {
   "date": "2026-05-15",
   "real_distance_km": 1.5,
-  "virtual_distance_km": 15.0,
+  "virtual_distance_km": 7.5,
   "used_virtual_distance_km": 3.0,
-  "remaining_distance_km": 12.0
+  "remaining_distance_km": 4.5
 }
 ```
 
@@ -209,9 +209,9 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 {
   "date": "2026-06-25",
   "real_distance_km": 1.5,
-  "virtual_distance_km": 15.0,
+  "virtual_distance_km": 7.5,
   "used_virtual_distance_km": 1.0,
-  "remaining_distance_km": 14.0
+  "remaining_distance_km": 6.5
 }
 ```
 
