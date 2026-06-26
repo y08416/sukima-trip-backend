@@ -87,6 +87,7 @@ func main() {
 		api.GET("/movements/total", movementHandler.GetTotal)
 
 		api.GET("/coins", coinHandler.GetBalance)
+		api.GET("/coins/today", coinHandler.GetEarnedToday)
 
 		api.GET("/visited-places", visitedPlaceHandler.GetAll)
 		api.POST("/visited-places", visitedPlaceHandler.Save)

@@ -86,7 +86,7 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 
   実装: `repository.CalcCoinFromRatings`（`user_ratings_total` 未取得時は 0 → 10枚にフォールバック）
 
-- 処理場所：バックエンド（`arrive_spot` RPC 内で `coins` テーブルを原子的に更新）
+- 処理場所：バックエンド（`arrive_spot` RPC 内で `coins` テーブルを原子的に更新し、`visited_places.coin_amount` に獲得枚数を保存）
 
 ---
 

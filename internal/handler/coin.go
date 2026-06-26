@@ -27,3 +27,15 @@ func (h *CoinHandler) GetBalance(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.CoinResponse{Balance: balance})
 }
+
+func (h *CoinHandler) GetEarnedToday(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	earned, err := h.repo.GetEarnedToday(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "今日の獲得コイン取得に失敗しました"})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.CoinTodayResponse{EarnedToday: earned})
+}
