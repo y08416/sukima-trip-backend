@@ -61,8 +61,8 @@ func (r *CoinRepository) GetEarnedToday(userID string) (int, error) {
 	}
 
 	total := 0
-	for _, r := range rows {
-		total += r.CoinAmount
+	for _, row := range rows {
+		total += row.CoinAmount
 	}
 	return total, nil
 }

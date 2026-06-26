@@ -61,6 +61,7 @@ Supabase Auth が認証情報（メール・パスワード）を管理するた
 | user_id | uuid | NO | users への外部キー |
 | place_id | text | NO | Google Places API の place_id |
 | place_name | text | NO | スポット名 |
+| coin_amount | integer | NO | 到着時に獲得したコイン枚数（デフォルト: 10） |
 | visited_at | timestamp | NO | 到着日時 |
 
 ---

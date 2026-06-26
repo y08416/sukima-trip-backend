@@ -245,6 +245,22 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 ---
 
+### GET /api/coins/today
+
+当日（JST 0時〜現在）に獲得したコインの合計を返す。
+
+**レスポンス** `200 OK`
+
+```json
+{
+  "earned_today": 30
+}
+```
+
+> スポット未到着の場合は `earned_today: 0` を返す
+
+---
+
 ## 訪問地 API（認証必要）
 
 ### GET /api/visited-places
