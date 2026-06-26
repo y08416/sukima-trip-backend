@@ -23,7 +23,7 @@ func NewFavoriteRepository(client *supa.Client) *FavoriteRepository {
 }
 
 func (r *FavoriteRepository) GetAll(userID string) ([]model.Favorite, error) {
-	data, _, err := r.client.From("favorites").
+	data, _, err := r.client.From("spot_likes").
 		Select("*", "", false).
 		Eq("user_id", userID).
 		Order("created_at", &postgrest.OrderOpts{Ascending: false}).
@@ -32,9 +32,26 @@ func (r *FavoriteRepository) GetAll(userID string) ([]model.Favorite, error) {
 		return nil, fmt.Errorf("お気に入り取得失敗: %w", err)
 	}
 
-	var favorites []model.Favorite
-	if err := json.Unmarshal(data, &favorites); err != nil {
+	var likes []struct {
+		ID        string `json:"id"`
+		UserID    string `json:"user_id"`
+		PlaceID   string `json:"place_id"`
+		PlaceName string `json:"place_name"`
+		CreatedAt string `json:"created_at"`
+	}
+	if err := json.Unmarshal(data, &likes); err != nil {
 		return nil, fmt.Errorf("データ変換失敗: %w", err)
+	}
+
+	favorites := make([]model.Favorite, len(likes))
+	for i, l := range likes {
+		favorites[i] = model.Favorite{
+			ID:        l.ID,
+			UserID:    l.UserID,
+			PlaceID:   l.PlaceID,
+			Name:      l.PlaceName,
+			CreatedAt: l.CreatedAt,
+		}
 	}
 	return favorites, nil
 }
@@ -59,7 +76,7 @@ func (r *FavoriteRepository) Save(userID string, req model.SaveFavoriteRequest) 
 }
 
 func (r *FavoriteRepository) Delete(userID, id string) error {
-	data, _, err := r.client.From("favorites").
+	data, _, err := r.client.From("spot_likes").
 		Delete("", "").
 		Eq("user_id", userID).
 		Eq("id", id).
