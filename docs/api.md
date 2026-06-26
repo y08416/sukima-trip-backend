@@ -346,7 +346,7 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 ### POST /api/spots/:id/arrive
 
-スポットへの到着を通知。バックエンドで距離を検証し、正当な場合のみコイン付与・訪問地記録を行う。
+スポットへの到着を通知。コイン付与・訪問地記録を行う。距離バリデーションはフロント側で実施（200m 以内で送信）。
 
 > `:id` は Google Places の `place_id`
 
@@ -354,13 +354,9 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 ```json
 {
-  "place_name": "清水寺",
-  "lat": 34.9948,
-  "lng": 135.7850
+  "place_name": "清水寺"
 }
 ```
-
-> `lat` / `lng` はユーザーの Street View 上の現在地座標
 
 **レスポンス** `200 OK`
 
@@ -381,11 +377,11 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 ```json
 {
-  "error": "スポットに到着していません"
+  "error": "このスポットにはすでに到着済みです"
 }
 ```
 
-> スポット実座標からの距離が 200m を超えている場合
+> 同じ `place_id` に既に到着済みの場合
 
 **エラー** `500`
 
@@ -395,7 +391,7 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 }
 ```
 
-> Google Places Details API でスポット座標の取得に失敗した場合
+> Google Places Details API の呼び出しに失敗した場合
 
 ---
 
