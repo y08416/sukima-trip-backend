@@ -186,23 +186,8 @@ func (r *SpotRepository) GetPlaceDetails(ctx context.Context, placeID string) (*
 }
 
 func (r *SpotRepository) resolvePhotoURL(photoRef string) string {
-	endpoint := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=%s&key=%s",
+	return fmt.Sprintf("https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=%s&key=%s",
 		photoRef, r.apiKey)
-
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Timeout: 3 * time.Second,
-	}
-
-	resp, err := client.Get(endpoint)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	return resp.Header.Get("Location")
 }
 
 func (r *SpotRepository) GetNearestSpot(lat, lng float64) (*model.NearestSpotResponse, error) {
