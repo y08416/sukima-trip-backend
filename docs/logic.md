@@ -16,7 +16,7 @@
 ※ used_virtual_distance_km が virtual_distance_km を超えても、レスポンスでは 0 未満にならない
 ```
 
-**例:** 1.5km 歩いた場合 → 仮想距離 15km。Street View で 3km 消費 → 残り 12km。
+**例:** 1.5km 歩いた場合 → 仮想距離 7.5km。Street View で 3km 消費 → 残り 4.5km。
 
 ### 保存・加算ルール
 
