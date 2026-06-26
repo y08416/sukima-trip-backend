@@ -19,12 +19,14 @@ func NewLikeRepository(client *supa.Client) *LikeRepository {
 	return &LikeRepository{client: client}
 }
 
-func (r *LikeRepository) Save(userID, placeID, placeName string) error {
+func (r *LikeRepository) Save(userID, placeID, placeName, photoURL, description string) error {
 	_, _, err := r.client.From("spot_likes").
 		Insert(map[string]interface{}{
-			"user_id":    userID,
-			"place_id":   placeID,
-			"place_name": placeName,
+			"user_id":     userID,
+			"place_id":    placeID,
+			"place_name":  placeName,
+			"photo_url":   photoURL,
+			"description": description,
 		}, false, "", "", "").
 		Execute()
 	if err != nil {

@@ -34,13 +34,11 @@ func (h *FavoriteHandler) GetAll(c *gin.Context) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			details, err := h.spotRepo.GetPlaceDetails(ctx, favorites[i].PlaceID)
+			total, err := h.spotRepo.GetUserRatingsTotal(ctx, favorites[i].PlaceID)
 			if err != nil {
 				return
 			}
-			favorites[i].CoinAmount = repository.CalcCoinFromRatings(details.UserRatingsTotal)
-			favorites[i].Description = details.Description
-			favorites[i].PhotoURL = details.PhotoURL
+			favorites[i].CoinAmount = repository.CalcCoinFromRatings(total)
 		}(i)
 	}
 	wg.Wait()
