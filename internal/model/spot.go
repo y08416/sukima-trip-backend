@@ -16,7 +16,7 @@ type ArriveResponse struct {
 	Message     string `json:"message"`
 	CoinEarned  int    `json:"coin_earned"`
 	Balance     int    `json:"balance"`
-	WikiSummary string `json:"wiki_summary"`
+	Description string `json:"description"`
 	PhotoURL    string `json:"photo_url"`
 }
 

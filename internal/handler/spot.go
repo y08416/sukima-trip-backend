@@ -98,14 +98,14 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	userRatingsTotal, err := h.spotRepo.GetUserRatingsTotal(c.Request.Context(), placeID)
+	details, err := h.spotRepo.GetPlaceDetails(c.Request.Context(), placeID)
 	if err != nil {
-		log.Printf("[Arrive] GetUserRatingsTotal失敗: placeID=%s err=%v", placeID, err)
+		log.Printf("[Arrive] GetPlaceDetails失敗: placeID=%s err=%v", placeID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
 		return
 	}
 
-	coinEarned := repository.CalcCoinFromRatings(userRatingsTotal)
+	coinEarned := repository.CalcCoinFromRatings(details.UserRatingsTotal)
 
 	balance, err := h.visitedRepo.SaveAndAddCoin(userID, placeID, req.PlaceName, coinEarned)
 	if err != nil {
@@ -118,13 +118,11 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	wikiSummary, photoURL := h.spotRepo.GetWikiInfo(req.PlaceName)
-
 	c.JSON(http.StatusOK, model.ArriveResponse{
 		Message:     "到着を記録しました",
 		CoinEarned:  coinEarned,
 		Balance:     balance,
-		WikiSummary: wikiSummary,
-		PhotoURL:    photoURL,
+		Description: details.Description,
+		PhotoURL:    details.PhotoURL,
 	})
 }

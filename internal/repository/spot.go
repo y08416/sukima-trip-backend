@@ -7,7 +7,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	neturl "net/url"
 	"sukima-trip-backend/internal/model"
 	"time"
 )
@@ -39,15 +38,19 @@ func CalcCoinFromRatings(userRatingsTotal int) int {
 type SpotRepository struct {
 	apiKey     string
 	httpClient *http.Client
-	wikiClient *http.Client
 }
 
 func NewSpotRepository(apiKey string) *SpotRepository {
 	return &SpotRepository{
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		wikiClient: &http.Client{Timeout: 3 * time.Second},
 	}
+}
+
+type PlaceDetails struct {
+	UserRatingsTotal int
+	Description      string
+	PhotoURL         string
 }
 
 func (r *SpotRepository) fetchPlaceDetails(ctx context.Context, placeID, fields string) ([]byte, error) {
@@ -144,37 +147,62 @@ func (r *SpotRepository) GetUserRatingsTotal(ctx context.Context, placeID string
 	return result.Result.UserRatingsTotal, nil
 }
 
-func (r *SpotRepository) GetWikiInfo(name string) (string, string) {
-	endpoint := fmt.Sprintf("https://ja.wikipedia.org/api/rest_v1/page/summary/%s",
-		neturl.PathEscape(name))
-
-	resp, err := r.wikiClient.Get(endpoint)
+func (r *SpotRepository) GetPlaceDetails(ctx context.Context, placeID string) (*PlaceDetails, error) {
+	body, err := r.fetchPlaceDetails(ctx, placeID, "user_ratings_total,editorial_summary,photos")
 	if err != nil {
-		return "", ""
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", ""
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", ""
+		return nil, err
 	}
 
 	var result struct {
-		Extract   string `json:"extract"`
-		Thumbnail struct {
-			Source string `json:"source"`
-		} `json:"thumbnail"`
+		Status string `json:"status"`
+		Result struct {
+			UserRatingsTotal int `json:"user_ratings_total"`
+			EditorialSummary struct {
+				Overview string `json:"overview"`
+			} `json:"editorial_summary"`
+			Photos []struct {
+				PhotoReference string `json:"photo_reference"`
+			} `json:"photos"`
+		} `json:"result"`
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		return "", ""
+		return nil, fmt.Errorf("データ変換失敗: %w", err)
+	}
+	if result.Status != "OK" {
+		return nil, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
 	}
 
-	return result.Extract, result.Thumbnail.Source
+	details := &PlaceDetails{
+		UserRatingsTotal: result.Result.UserRatingsTotal,
+		Description:      result.Result.EditorialSummary.Overview,
+	}
+
+	if len(result.Result.Photos) > 0 {
+		details.PhotoURL = r.resolvePhotoURL(result.Result.Photos[0].PhotoReference)
+	}
+
+	return details, nil
+}
+
+func (r *SpotRepository) resolvePhotoURL(photoRef string) string {
+	endpoint := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=%s&key=%s",
+		photoRef, r.apiKey)
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout: 3 * time.Second,
+	}
+
+	resp, err := client.Get(endpoint)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	return resp.Header.Get("Location")
 }
 
 func (r *SpotRepository) GetNearestSpot(lat, lng float64) (*model.NearestSpotResponse, error) {
