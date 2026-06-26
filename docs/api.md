@@ -373,6 +373,16 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 > `coin_earned` はスポットの Google Places レビュー数に応じて変動する（10 / 20 / 30）
 > `wiki_summary` / `photo_url` は Wikipedia に記事がない場合は空文字で返る
 
+**エラー** `400`
+
+```json
+{
+  "error": "このスポットにはすでに到着済みです"
+}
+```
+
+> 同じ `place_id` に既に到着済みの場合
+
 **エラー** `500`
 
 ```json

@@ -121,35 +121,6 @@ func (r *SpotRepository) GetNearbySpots(lat, lng float64) ([]model.Spot, error) 
 	return spots, nil
 }
 
-func (r *SpotRepository) GetPlaceLocation(ctx context.Context, placeID string) (lat, lng float64, userRatingsTotal int, err error) {
-	body, err := r.fetchPlaceDetails(ctx, placeID, "geometry,user_ratings_total")
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	var result struct {
-		Status string `json:"status"`
-		Result struct {
-			Geometry struct {
-				Location struct {
-					Lat float64 `json:"lat"`
-					Lng float64 `json:"lng"`
-				} `json:"location"`
-			} `json:"geometry"`
-			UserRatingsTotal int `json:"user_ratings_total"`
-		} `json:"result"`
-	}
-
-	if err := json.Unmarshal(body, &result); err != nil {
-		return 0, 0, 0, fmt.Errorf("データ変換失敗: %w", err)
-	}
-	if result.Status != "OK" {
-		return 0, 0, 0, fmt.Errorf("Places Details API エラー: %s (place_id=%s)", result.Status, placeID)
-	}
-
-	return result.Result.Geometry.Location.Lat, result.Result.Geometry.Location.Lng, result.Result.UserRatingsTotal, nil
-}
-
 func (r *SpotRepository) GetUserRatingsTotal(ctx context.Context, placeID string) (int, error) {
 	body, err := r.fetchPlaceDetails(ctx, placeID, "user_ratings_total")
 	if err != nil {

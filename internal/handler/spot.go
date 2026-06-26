@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 type SpotHandler struct {
 	spotRepo    *repository.SpotRepository
 	visitedRepo *repository.VisitedPlaceRepository
