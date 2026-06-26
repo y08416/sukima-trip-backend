@@ -43,33 +43,22 @@ func (r *MovementRepository) GetToday(userID string) (*model.Movement, error) {
 	return &movement, nil
 }
 
-func (r *MovementRepository) Save(userID string, req model.SaveMovementRequest) error {
-	today := time.Now().In(jst).Format("2006-01-02")
+func (r *MovementRepository) Save(userID string, req model.SaveMovementRequest) (*model.Movement, error) {
+	result := r.client.Rpc("save_movement", "", map[string]interface{}{
+		"p_user_id":                  userID,
+		"p_real_distance_km":         req.RealDistanceKm,
+		"p_used_virtual_distance_km": req.UsedVirtualDistanceKm,
+	})
 
-	existing, err := r.GetToday(userID)
-	if err != nil {
-		return err
+	trimmed := strings.TrimSpace(result)
+	var rows []model.Movement
+	if err := json.Unmarshal([]byte(trimmed), &rows); err != nil {
+		return nil, fmt.Errorf("移動距離保存失敗: %w", err)
 	}
-
-	if existing != nil {
-		_, _, err = r.client.From("movements").
-			Update(map[string]interface{}{
-				"real_distance_km":         existing.RealDistanceKm + req.RealDistanceKm,
-				"used_virtual_distance_km": existing.UsedVirtualDistanceKm + req.UsedVirtualDistanceKm,
-			}, "", "").
-			Eq("id", existing.ID).
-			Execute()
-	} else {
-		_, _, err = r.client.From("movements").
-			Insert(map[string]interface{}{
-				"user_id":                 userID,
-				"date":                    today,
-				"real_distance_km":        req.RealDistanceKm,
-				"used_virtual_distance_km": req.UsedVirtualDistanceKm,
-			}, false, "", "", "").
-			Execute()
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("移動距離保存失敗: レコードが返りませんでした")
 	}
-	return err
+	return &rows[0], nil
 }
 
 func (r *MovementRepository) GetTotal(userID string) (float64, error) {

@@ -90,7 +90,6 @@ func main() {
 		api.GET("/coins/today", coinHandler.GetEarnedToday)
 
 		api.GET("/visited-places", visitedPlaceHandler.GetAll)
-		api.POST("/visited-places", visitedPlaceHandler.Save)
 
 		api.GET("/spots", spotHandler.GetSpots)
 		api.GET("/spots/nearest", spotHandler.GetNearestSpot)

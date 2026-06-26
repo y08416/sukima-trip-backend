@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"sukima-trip-backend/internal/model"
 	"sukima-trip-backend/internal/repository"
 
@@ -45,7 +47,16 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"p_name":    req.Name,
 		"p_gender":  req.Gender,
 	})
-	if result != "" && result != "null" {
+	trimmed := strings.TrimSpace(result)
+	if trimmed != "" && trimmed != "null" {
+		var rpcErr struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		}
+		json.Unmarshal([]byte(trimmed), &rpcErr) //nolint:errcheck
+		if rpcErr.Code != "" {
+			log.Printf("register_user RPC失敗: code=%s message=%s", rpcErr.Code, rpcErr.Message)
+		}
 		if cleanupErr := h.repo.DeleteUser(userID); cleanupErr != nil {
 			log.Printf("ロールバック失敗(Auth削除): userID=%s err=%v", userID, cleanupErr)
 		}
