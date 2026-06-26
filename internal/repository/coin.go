@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	supa "github.com/supabase-community/supabase-go"
 )
@@ -38,6 +39,32 @@ func (r *CoinRepository) GetBalance(userID string) (int, error) {
 		return 0, fmt.Errorf("データ変換失敗: %w", err)
 	}
 	return result.Balance, nil
+}
+
+func (r *CoinRepository) GetEarnedToday(userID string) (int, error) {
+	todayStart := time.Now().In(jst).Format("2006-01-02") + "T00:00:00+09:00"
+
+	data, _, err := r.client.From("visited_places").
+		Select("coin_amount", "", false).
+		Eq("user_id", userID).
+		Gte("visited_at", todayStart).
+		Execute()
+	if err != nil {
+		return 0, fmt.Errorf("今日のコイン取得失敗: %w", err)
+	}
+
+	var rows []struct {
+		CoinAmount int `json:"coin_amount"`
+	}
+	if err := json.Unmarshal(data, &rows); err != nil {
+		return 0, fmt.Errorf("データ変換失敗: %w", err)
+	}
+
+	total := 0
+	for _, r := range rows {
+		total += r.CoinAmount
+	}
+	return total, nil
 }
 
 func (r *CoinRepository) AddCoin(userID string, amount int) error {
