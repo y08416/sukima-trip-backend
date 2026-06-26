@@ -15,8 +15,7 @@ import (
 const (
 	placesAPIURL        = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 	placesDetailsAPIURL = "https://maps.googleapis.com/maps/api/place/details/json"
-	searchRadius        = 5000
-	ArriveRadiusKm      = 0.2
+	searchRadius = 5000
 
 	coinDefault     = 10
 	coinPopular     = 20

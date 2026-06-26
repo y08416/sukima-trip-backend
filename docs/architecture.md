@@ -46,10 +46,9 @@ Supabase
 1. フロントが GET /api/spots で周辺スポット一覧を取得・キャッシュ
 2. Street View 移動中にフロントがローカルで距離チェック
 3. 200m 以内に入ったら POST /api/spots/:id/arrive を送信
-4. バックエンドが Places Details API でスポット実座標を取得
-5. 送信された座標とスポット座標の距離を検証（200m 超なら 400）
-6. 検証 OK → 訪問地保存 + コイン付与 + Wikipedia 情報取得
-7. レスポンスにコイン残高・Wikipedia 概要・画像 URL を返す
+4. バックエンドが Places Details API で user_ratings_total を取得
+5. 訪問地保存 + コイン付与 + Wikipedia 情報取得
+6. レスポンスにコイン残高・Wikipedia 概要・画像 URL を返す
 ```
 
 ## ディレクトリ構成

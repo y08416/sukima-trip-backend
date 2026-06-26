@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+
 type SpotHandler struct {
 	spotRepo    *repository.SpotRepository
 	visitedRepo *repository.VisitedPlaceRepository
@@ -97,19 +98,9 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 		return
 	}
 
-	if req.Lat < -90 || req.Lat > 90 || req.Lng < -180 || req.Lng > 180 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "座標が不正です"})
-		return
-	}
-
-	spotLat, spotLng, userRatingsTotal, err := h.spotRepo.GetPlaceLocation(c.Request.Context(), placeID)
+	userRatingsTotal, err := h.spotRepo.GetUserRatingsTotal(c.Request.Context(), placeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
-		return
-	}
-
-	if repository.CalcDistance(req.Lat, req.Lng, spotLat, spotLng) > repository.ArriveRadiusKm {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "スポットに到着していません"})
 		return
 	}
 

@@ -9,9 +9,7 @@ type Spot struct {
 }
 
 type ArriveRequest struct {
-	PlaceName string  `json:"place_name" binding:"required"`
-	Lat       float64 `json:"lat" binding:"required"`
-	Lng       float64 `json:"lng" binding:"required"`
+	PlaceName string `json:"place_name" binding:"required"`
 }
 
 type ArriveResponse struct {

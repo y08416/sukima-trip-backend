@@ -60,18 +60,18 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 `POST /api/spots/:id/arrive` の処理フロー：
 
 ```
-1. リクエストのユーザー座標（lat/lng）を受け取る
-2. place_id を使って Google Places Details API でスポットの実座標と user_ratings_total を取得
-3. ユーザー座標とスポット座標の距離をハバーサイン公式で計算
-4. 距離 > 200m → 400 Bad Request を返す（到着していない）
-5. 距離 ≦ 200m → 以下を実行
-   a. user_ratings_total に応じて獲得コイン枚数を算出（CalcCoinFromRatings）
-   b. `arrive_spot` RPC で visited_places への記録と coins への加算を1トランザクションで実行（残高を返す）
-   c. Wikipedia REST API でスポット名の概要・画像 URL を取得
-   d. コイン残高・Wikipedia 情報をレスポンスに含めて返す
+1. place_id を使って Google Places Details API で user_ratings_total を取得
+2. user_ratings_total に応じて獲得コイン枚数を算出（CalcCoinFromRatings）
+3. `arrive_spot` RPC で visited_places への記録と coins への加算を1トランザクションで実行（残高を返す）
+4. Wikipedia REST API でスポット名の概要・画像 URL を取得
+5. コイン残高・Wikipedia 情報をレスポンスに含めて返す
 ```
 
-到着判定をバックエンドで行う理由：フロントが座標を偽装してコインを不正取得することを防ぐため。
+**距離バリデーションを撤廃した理由:**
+- Nearby Search（`/spots/nearest` の座標源）と Places Details（`/arrive` の座標源）が同一 `place_id` でも 200m 以上ズレるケースがあった
+- Street View は道路上しか移動できないため境内・建物内のスポットには物理的に近づけない
+- ユーザー座標はすでにフロントから送信しており、座標偽装を完全に防ぐことは不可能
+- 実質的な不正防止は `arrive_spot` RPC の重複チェックと認証で担保されている
 
 ### コイン付与
 
