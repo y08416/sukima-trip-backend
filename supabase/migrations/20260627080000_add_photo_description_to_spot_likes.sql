@@ -1,0 +1,2 @@
+ALTER TABLE spot_likes ADD COLUMN IF NOT EXISTS photo_url text NOT NULL DEFAULT '';
+ALTER TABLE spot_likes ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';

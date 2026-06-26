@@ -22,14 +22,16 @@ func (h *LikeHandler) Save(c *gin.Context) {
 	placeID := c.Param("id")
 
 	var req struct {
-		PlaceName string `json:"place_name" binding:"required"`
+		PlaceName   string `json:"place_name" binding:"required"`
+		PhotoURL    string `json:"photo_url"`
+		Description string `json:"description"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストが不正です"})
 		return
 	}
 
-	if err := h.repo.Save(userID, placeID, req.PlaceName); err != nil {
+	if err := h.repo.Save(userID, placeID, req.PlaceName, req.PhotoURL, req.Description); err != nil {
 		if errors.Is(err, repository.ErrAlreadyLiked) {
 			c.JSON(http.StatusConflict, gin.H{"error": "すでにいいね済みです"})
 			return

@@ -33,11 +33,13 @@ func (r *FavoriteRepository) GetAll(userID string) ([]model.Favorite, error) {
 	}
 
 	var likes []struct {
-		ID        string `json:"id"`
-		UserID    string `json:"user_id"`
-		PlaceID   string `json:"place_id"`
-		PlaceName string `json:"place_name"`
-		CreatedAt string `json:"created_at"`
+		ID          string `json:"id"`
+		UserID      string `json:"user_id"`
+		PlaceID     string `json:"place_id"`
+		PlaceName   string `json:"place_name"`
+		PhotoURL    string `json:"photo_url"`
+		Description string `json:"description"`
+		CreatedAt   string `json:"created_at"`
 	}
 	if err := json.Unmarshal(data, &likes); err != nil {
 		return nil, fmt.Errorf("データ変換失敗: %w", err)
@@ -46,11 +48,13 @@ func (r *FavoriteRepository) GetAll(userID string) ([]model.Favorite, error) {
 	favorites := make([]model.Favorite, len(likes))
 	for i, l := range likes {
 		favorites[i] = model.Favorite{
-			ID:        l.ID,
-			UserID:    l.UserID,
-			PlaceID:   l.PlaceID,
-			Name:      l.PlaceName,
-			CreatedAt: l.CreatedAt,
+			ID:          l.ID,
+			UserID:      l.UserID,
+			PlaceID:     l.PlaceID,
+			Name:        l.PlaceName,
+			PhotoURL:    l.PhotoURL,
+			Description: l.Description,
+			CreatedAt:   l.CreatedAt,
 		}
 	}
 	return favorites, nil
