@@ -1,12 +1,14 @@
 package model
 
 type Favorite struct {
-	ID         string `json:"id"`
-	UserID     string `json:"user_id"`
-	PlaceID    string `json:"place_id"`
-	Name       string `json:"name"`
-	CreatedAt  string `json:"created_at"`
-	CoinAmount int    `json:"coin_amount"`
+	ID          string `json:"id"`
+	UserID      string `json:"user_id"`
+	PlaceID     string `json:"place_id"`
+	Name        string `json:"name"`
+	CreatedAt   string `json:"created_at"`
+	CoinAmount  int    `json:"coin_amount"`
+	Description string `json:"description"`
+	PhotoURL    string `json:"photo_url"`
 }
 
 type SaveFavoriteRequest struct {
