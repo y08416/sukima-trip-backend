@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"sukima-trip-backend/internal/model"
@@ -99,6 +100,7 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 
 	userRatingsTotal, err := h.spotRepo.GetUserRatingsTotal(c.Request.Context(), placeID)
 	if err != nil {
+		log.Printf("[Arrive] GetUserRatingsTotal失敗: placeID=%s err=%v", placeID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "スポット情報の取得に失敗しました"})
 		return
 	}
@@ -111,6 +113,7 @@ func (h *SpotHandler) Arrive(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "このスポットにはすでに到着済みです"})
 			return
 		}
+		log.Printf("[Arrive] SaveAndAddCoin失敗: userID=%s placeID=%s coinEarned=%d err=%v", userID, placeID, coinEarned, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "到着処理に失敗しました"})
 		return
 	}

@@ -68,17 +68,21 @@ func (r *VisitedPlaceRepository) SaveAndAddCoin(userID, placeID, placeName strin
 	})
 
 	trimmed := strings.TrimSpace(result)
-	if balance, err := strconv.Atoi(trimmed); err == nil {
+
+	// scalar int として解析（PostgREST が "10" や 10 で返す場合）
+	unquoted := strings.Trim(trimmed, `"`)
+	if balance, err := strconv.Atoi(unquoted); err == nil {
 		return balance, nil
 	}
 
+	// エラーレスポンスとして解析
 	var rpcErr rpcError
-	if err := json.Unmarshal([]byte(result), &rpcErr); err != nil {
-		return 0, fmt.Errorf("到着処理失敗: レスポンス解析エラー: %w", err)
+	if err := json.Unmarshal([]byte(trimmed), &rpcErr); err != nil {
+		return 0, fmt.Errorf("到着処理失敗: レスポンス解析エラー: raw=%q err=%w", trimmed, err)
 	}
 	if rpcErr.Code == "23505" || strings.Contains(rpcErr.Message, "duplicate key") {
 		return 0, ErrAlreadyVisited
 	}
-	return 0, fmt.Errorf("到着処理失敗: %s", rpcErr.Message)
+	return 0, fmt.Errorf("到着処理失敗: code=%s message=%s", rpcErr.Code, rpcErr.Message)
 }
 
