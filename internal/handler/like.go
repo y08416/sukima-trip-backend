@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"sukima-trip-backend/internal/repository"
 
@@ -33,6 +34,7 @@ func (h *LikeHandler) Save(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": "すでにいいね済みです"})
 			return
 		}
+		log.Printf("[Like] Save失敗: userID=%s placeID=%s err=%v", userID, placeID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "いいねに失敗しました"})
 		return
 	}

@@ -1,0 +1,1 @@
+ALTER TABLE spot_likes ADD COLUMN IF NOT EXISTS place_name text NOT NULL DEFAULT '';
