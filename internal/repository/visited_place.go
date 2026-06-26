@@ -82,19 +82,3 @@ func (r *VisitedPlaceRepository) SaveAndAddCoin(userID, placeID, placeName strin
 	return 0, fmt.Errorf("到着処理失敗: %s", rpcErr.Message)
 }
 
-func (r *VisitedPlaceRepository) Save(userID string, req model.SaveVisitedPlaceRequest) error {
-	_, _, err := r.client.From("visited_places").
-		Insert(map[string]interface{}{
-			"user_id":    userID,
-			"place_id":   req.PlaceID,
-			"place_name": req.PlaceName,
-		}, false, "", "", "").
-		Execute()
-	if err != nil {
-		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "duplicate key") {
-			return ErrAlreadyVisited
-		}
-		return fmt.Errorf("訪問地保存失敗: %w", err)
-	}
-	return nil
-}

@@ -283,27 +283,6 @@ Authorization: Bearer <access_token>  ※認証が必要な API のみ
 
 ---
 
-### POST /api/visited-places
-
-**リクエスト**
-
-```json
-{
-  "place_id": "ChIJ...",
-  "place_name": "清水寺"
-}
-```
-
-**レスポンス** `201 Created`
-
-```json
-{
-  "message": "訪問地を記録しました"
-}
-```
-
----
-
 ## スポット API（認証必要）
 
 ### GET /api/spots

@@ -53,6 +53,10 @@ func (r *MovementRepository) Save(userID string, req model.SaveMovementRequest) 
 	trimmed := strings.TrimSpace(result)
 	var rows []model.Movement
 	if err := json.Unmarshal([]byte(trimmed), &rows); err != nil {
+		var rpcErr rpcError
+		if jsonErr := json.Unmarshal([]byte(trimmed), &rpcErr); jsonErr == nil && rpcErr.Code != "" {
+			return nil, fmt.Errorf("移動距離保存失敗: %s", rpcErr.Message)
+		}
 		return nil, fmt.Errorf("移動距離保存失敗: %w", err)
 	}
 	if len(rows) == 0 {

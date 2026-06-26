@@ -53,8 +53,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			Code    string `json:"code"`
 			Message string `json:"message"`
 		}
-		json.Unmarshal([]byte(trimmed), &rpcErr) //nolint:errcheck
-		if rpcErr.Code != "" {
+		if err := json.Unmarshal([]byte(trimmed), &rpcErr); err != nil {
+			log.Printf("register_user RPC失敗: レスポンス解析エラー: %v", err)
+		} else if rpcErr.Code != "" {
 			log.Printf("register_user RPC失敗: code=%s message=%s", rpcErr.Code, rpcErr.Message)
 		}
 		if cleanupErr := h.repo.DeleteUser(userID); cleanupErr != nil {
