@@ -63,8 +63,8 @@ a    = sin(dLat/2)² + cos(lat1) × cos(lat2) × sin(dLng/2)²
 1. リクエストのユーザー座標（lat/lng）を受け取る
 2. place_id を使って Google Places Details API でスポットの実座標と user_ratings_total を取得
 3. ユーザー座標とスポット座標の距離をハバーサイン公式で計算
-4. 距離 > 100m → 400 Bad Request を返す（到着していない）
-5. 距離 ≦ 100m → 以下を実行
+4. 距離 > 200m → 400 Bad Request を返す（到着していない）
+5. 距離 ≦ 200m → 以下を実行
    a. user_ratings_total に応じて獲得コイン枚数を算出（CalcCoinFromRatings）
    b. `arrive_spot` RPC で visited_places への記録と coins への加算を1トランザクションで実行（残高を返す）
    c. Wikipedia REST API でスポット名の概要・画像 URL を取得
