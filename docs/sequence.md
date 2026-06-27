@@ -5,23 +5,28 @@
 ```mermaid
 sequenceDiagram
     participant フロント
-    participant APIサーバー
+    participant ハンドラー
+    participant スポットリポジトリ
+    participant 到着履歴リポジトリ
     participant GooglePlaces as Google Places API
     participant DB as データベース
 
-    フロント->>APIサーバー: このスポットに到着した！<br/>（スポット名を送る）
+    フロント->>ハンドラー: POST /api/spots/:id/arrive<br/>{ place_name }
 
-    APIサーバー->>GooglePlaces: このスポットの情報を教えて
-    GooglePlaces-->>APIサーバー: 説明・写真・口コミ数が返ってくる
+    ハンドラー->>スポットリポジトリ: スポット情報取得（placeID）
+    スポットリポジトリ->>GooglePlaces: 説明・写真・評価数を取得
+    GooglePlaces-->>スポットリポジトリ: 説明・写真URL・評価数
+    スポットリポジトリ-->>ハンドラー: スポット情報
 
-    APIサーバー->>APIサーバー: 口コミ数が多いほど<br/>もらえるコインが増える
-    Note right of APIサーバー: 〜999件 → 10コイン<br/>1000〜4999件 → 20コイン<br/>5000件〜 → 30コイン
+    ハンドラー->>ハンドラー: 評価数からコイン枚数を計算<br/>（1000件未満:10枚 / 5000件未満:20枚 / 以上:30枚）
 
-    APIサーバー->>DB: 到着を記録して、コインを追加して
-    Note over DB: すでに到着済みなら<br/>ここで弾く（2回目以降は無効）
-    DB-->>APIサーバー: 新しいコイン残高
+    ハンドラー->>到着履歴リポジトリ: 到着を記録してコインを付与
+    到着履歴リポジトリ->>DB: arrive_spot（到着記録 + コイン加算）
+    Note over DB: 重複到着はここで弾く
+    DB-->>到着履歴リポジトリ: 新しいコイン残高
+    到着履歴リポジトリ-->>ハンドラー: コイン残高
 
-    APIサーバー-->>フロント: 獲得コイン・残高・スポットの説明・写真を返す
+    ハンドラー-->>フロント: 200 獲得コイン・残高・スポット説明・写真URL
 ```
 
 ## いいね `POST /api/spots/:id/like`
@@ -29,19 +34,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant フロント
-    participant APIサーバー
+    participant ハンドラー
+    participant いいねリポジトリ
     participant DB as データベース
 
-    フロント->>APIサーバー: このスポットをいいねした！<br/>（スポット名・写真・説明を一緒に送る）
+    フロント->>ハンドラー: POST /api/spots/:id/like<br/>{ place_name, photo_url, description }
+    ハンドラー->>いいねリポジトリ: いいねを保存
+    いいねリポジトリ->>DB: spot_likes に INSERT
 
-    APIサーバー->>DB: いいね情報を保存して
-
-    alt すでにいいね済みだった場合
-        DB-->>APIサーバー: 重複してるよ
-        APIサーバー-->>フロント: 409 すでにいいね済みです
-    else はじめていいねする場合
-        DB-->>APIサーバー: 保存できた
-        APIサーバー-->>フロント: 201 いいねしました
+    alt すでにいいね済み
+        DB-->>いいねリポジトリ: 重複エラー
+        いいねリポジトリ-->>ハンドラー: ErrAlreadyLiked
+        ハンドラー-->>フロント: 409 すでにいいね済みです
+    else 成功
+        DB-->>いいねリポジトリ: OK
+        いいねリポジトリ-->>ハンドラー: 成功
+        ハンドラー-->>フロント: 201 いいねしました
     end
 ```
 
@@ -50,22 +58,27 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant フロント
-    participant APIサーバー
+    participant ハンドラー
+    participant お気に入りリポジトリ
+    participant スポットリポジトリ
     participant GooglePlaces as Google Places API
     participant DB as データベース
 
-    フロント->>APIサーバー: いいねしたスポットの一覧を見せて
+    フロント->>ハンドラー: GET /api/favorites
+    ハンドラー->>お気に入りリポジトリ: 一覧取得
+    お気に入りリポジトリ->>DB: spot_likes を取得（いいね済みスポット一覧）
+    DB-->>お気に入りリポジトリ: スポット一覧（名前・写真・説明付き）
+    お気に入りリポジトリ-->>ハンドラー: スポット一覧
 
-    APIサーバー->>DB: このユーザーがいいねしたスポットを全部取得して
-    DB-->>APIサーバー: スポット一覧（名前・写真・説明が入っている）
-
-    loop いいねしたスポットを1件ずつ（まとめて並列で処理）
-        APIサーバー->>GooglePlaces: このスポットの口コミ数を教えて
-        GooglePlaces-->>APIサーバー: 口コミ数
-        APIサーバー->>APIサーバー: 口コミ数からコイン枚数を計算
+    loop 各スポットを並列処理
+        ハンドラー->>スポットリポジトリ: 評価数を取得
+        スポットリポジトリ->>GooglePlaces: 評価数を取得
+        GooglePlaces-->>スポットリポジトリ: 評価数
+        スポットリポジトリ-->>ハンドラー: 評価数
+        ハンドラー->>ハンドラー: コイン枚数を計算
     end
 
-    APIサーバー-->>フロント: スポット一覧（名前・写真・説明・獲得できるコイン枚数）を返す
+    ハンドラー-->>フロント: 200 スポット一覧（名前・写真・説明・コイン枚数）
 ```
 
 ## 移動距離保存 `POST /api/movements/today`
@@ -73,19 +86,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant フロント
-    participant APIサーバー
+    participant ハンドラー
+    participant 移動距離リポジトリ
     participant DB as データベース
 
-    フロント->>APIサーバー: 今日この距離を歩いた！<br/>（実際の距離・使った仮想距離を送る）
+    フロント->>ハンドラー: POST /api/movements/today<br/>{ 実距離(km), 使用した仮想距離(km) }
+    ハンドラー->>移動距離リポジトリ: 移動距離を保存
+    移動距離リポジトリ->>DB: save_movement RPC
 
-    APIサーバー->>DB: 今日の移動記録を更新して
-    Note over DB: 今日すでに記録があれば足し算<br/>なければ新しく作る
+    Note over DB: 当日レコードがあれば累積加算<br/>なければ新規作成（UPSERT）
 
-    DB-->>APIサーバー: 今日の合計移動データ
+    DB-->>移動距離リポジトリ: 当日の合計レコード
+    移動距離リポジトリ-->>ハンドラー: 当日の移動データ
 
-    APIサーバー->>APIサーバー: 仮想距離 = 実距離 × 5<br/>残り距離 = 仮想距離 − 使った距離<br/>（マイナスにはならない）
-
-    APIサーバー-->>フロント: 今日の実距離・仮想距離・残り距離を返す
+    ハンドラー->>ハンドラー: 仮想距離 = 実距離 × 5<br/>残り距離 = max(0, 仮想距離 - 使用済み)
+    ハンドラー-->>フロント: 200 実距離・仮想距離・使用済み距離・残り距離
 ```
 
 ## 移動距離取得 `GET /api/movements/today`
@@ -93,20 +108,23 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant フロント
-    participant APIサーバー
+    participant ハンドラー
+    participant 移動距離リポジトリ
     participant DB as データベース
 
-    フロント->>APIサーバー: 今日の移動距離を教えて
+    フロント->>ハンドラー: GET /api/movements/today
+    ハンドラー->>移動距離リポジトリ: 当日データ取得
+    移動距離リポジトリ->>DB: movements から当日レコードを検索
 
-    APIサーバー->>DB: 今日の移動記録を探して
-
-    alt 今日はまだ歩いていない場合
-        DB-->>APIサーバー: 記録なし
-        APIサーバー-->>フロント: 全部 0 で返す
-    else 今日の記録がある場合
-        DB-->>APIサーバー: 今日の移動データ
-        APIサーバー->>APIサーバー: 仮想距離 = 実距離 × 5<br/>残り距離 = 仮想距離 − 使った距離
-        APIサーバー-->>フロント: 今日の実距離・仮想距離・残り距離を返す
+    alt 当日の移動記録なし
+        DB-->>移動距離リポジトリ: なし
+        移動距離リポジトリ-->>ハンドラー: なし
+        ハンドラー-->>フロント: 200 全て0で返す
+    else 移動記録あり
+        DB-->>移動距離リポジトリ: 当日レコード
+        移動距離リポジトリ-->>ハンドラー: 移動データ
+        ハンドラー->>ハンドラー: 仮想距離 = 実距離 × 5<br/>残り距離 = max(0, 仮想距離 - 使用済み)
+        ハンドラー-->>フロント: 200 実距離・仮想距離・使用済み距離・残り距離
     end
 ```
 
@@ -115,18 +133,17 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant フロント
-    participant APIサーバー
-    participant Supabase as Supabase（認証サービス）
+    participant ハンドラー
+    participant SupabaseAuth as Supabase Auth
 
-    フロント->>APIサーバー: ログインしたい<br/>（メールアドレス・パスワードを送る）
+    フロント->>ハンドラー: POST /auth/login<br/>{ email, password }
+    ハンドラー->>SupabaseAuth: メール・パスワードで認証
 
-    APIサーバー->>Supabase: このメールとパスワードで認証して
-    
-    alt パスワードが違う・ユーザーが存在しない場合
-        Supabase-->>APIサーバー: 認証失敗
-        APIサーバー-->>フロント: 401 メールアドレスまたはパスワードが正しくありません
-    else 正しい場合
-        Supabase-->>APIサーバー: 認証成功・トークン発行
-        APIサーバー-->>フロント: ログイン用トークンを返す
+    alt 認証失敗
+        SupabaseAuth-->>ハンドラー: エラー
+        ハンドラー-->>フロント: 401 メールアドレスまたはパスワードが正しくありません
+    else 認証成功
+        SupabaseAuth-->>ハンドラー: アクセストークン・リフレッシュトークン
+        ハンドラー-->>フロント: 200 access_token・refresh_token
     end
 ```
