@@ -4,48 +4,52 @@
 
 ```mermaid
 sequenceDiagram
-    participant F as フロント
-    participant H as SpotHandler
-    participant SR as SpotRepository
-    participant VR as VisitedPlaceRepository
-    participant Places as Google Places API
-    participant DB as Supabase
+    participant フロント
+    participant ハンドラー
+    participant スポットリポジトリ
+    participant 到着履歴リポジトリ
+    participant GooglePlaces as Google Places API
+    participant DB as データベース
 
-    F->>H: POST /api/spots/:id/arrive<br/>{ place_name }
-    H->>SR: GetPlaceDetails(placeID)
-    SR->>Places: Places Details API<br/>fields=user_ratings_total,editorial_summary,photos
-    Places-->>SR: { user_ratings_total, editorial_summary, photos }
-    SR->>Places: Photos API (photo_reference)
-    Places-->>SR: photo_url
-    SR-->>H: PlaceDetails{ UserRatingsTotal, Description, PhotoURL }
-    H->>H: CalcCoinFromRatings(userRatingsTotal)
-    H->>VR: SaveAndAddCoin(userID, placeID, placeName, coinEarned)
-    VR->>DB: RPC arrive_spot
-    DB-->>VR: 新コイン残高
-    VR-->>H: balance
-    H-->>F: 200 { message, coin_earned, balance, description, photo_url }
+    フロント->>ハンドラー: POST /api/spots/:id/arrive<br/>{ place_name }
+
+    ハンドラー->>スポットリポジトリ: スポット情報取得（placeID）
+    スポットリポジトリ->>GooglePlaces: 説明・写真・評価数を取得
+    GooglePlaces-->>スポットリポジトリ: 説明・写真URL・評価数
+    スポットリポジトリ-->>ハンドラー: スポット情報
+
+    ハンドラー->>ハンドラー: 評価数からコイン枚数を計算<br/>（1000件未満:10枚 / 5000件未満:20枚 / 以上:30枚）
+
+    ハンドラー->>到着履歴リポジトリ: 到着を記録してコインを付与
+    到着履歴リポジトリ->>DB: arrive_spot（到着記録 + コイン加算）
+    Note over DB: 重複到着はここで弾く
+    DB-->>到着履歴リポジトリ: 新しいコイン残高
+    到着履歴リポジトリ-->>ハンドラー: コイン残高
+
+    ハンドラー-->>フロント: 200 獲得コイン・残高・スポット説明・写真URL
 ```
 
 ## いいね `POST /api/spots/:id/like`
 
 ```mermaid
 sequenceDiagram
-    participant F as フロント
-    participant H as LikeHandler
-    participant R as LikeRepository
-    participant DB as Supabase
+    participant フロント
+    participant ハンドラー
+    participant いいねリポジトリ
+    participant DB as データベース
 
-    F->>H: POST /api/spots/:id/like<br/>{ place_name, photo_url, description }
-    H->>R: Save(userID, placeID, placeName, photoURL, description)
-    R->>DB: INSERT INTO spot_likes
-    alt 重複
-        DB-->>R: 23505 duplicate key
-        R-->>H: ErrAlreadyLiked
-        H-->>F: 409 { error: "すでにいいね済みです" }
+    フロント->>ハンドラー: POST /api/spots/:id/like<br/>{ place_name, photo_url, description }
+    ハンドラー->>いいねリポジトリ: いいねを保存
+    いいねリポジトリ->>DB: spot_likes に INSERT
+
+    alt すでにいいね済み
+        DB-->>いいねリポジトリ: 重複エラー
+        いいねリポジトリ-->>ハンドラー: ErrAlreadyLiked
+        ハンドラー-->>フロント: 409 すでにいいね済みです
     else 成功
-        DB-->>R: ok
-        R-->>H: nil
-        H-->>F: 201 { message: "いいねしました" }
+        DB-->>いいねリポジトリ: OK
+        いいねリポジトリ-->>ハンドラー: 成功
+        ハンドラー-->>フロント: 201 いいねしました
     end
 ```
 
@@ -53,86 +57,93 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant F as フロント
-    participant H as FavoriteHandler
-    participant FR as FavoriteRepository
-    participant SR as SpotRepository
-    participant Places as Google Places API
-    participant DB as Supabase
+    participant フロント
+    participant ハンドラー
+    participant お気に入りリポジトリ
+    participant スポットリポジトリ
+    participant GooglePlaces as Google Places API
+    participant DB as データベース
 
-    F->>H: GET /api/favorites
-    H->>FR: GetAll(userID)
-    FR->>DB: SELECT * FROM spot_likes WHERE user_id=?
-    DB-->>FR: [{ id, place_id, place_name, photo_url, description, ... }]
-    FR-->>H: []Favorite
-    loop 各スポット（並列）
-        H->>SR: GetUserRatingsTotal(placeID)
-        SR->>Places: Places Details API<br/>fields=user_ratings_total
-        Places-->>SR: user_ratings_total
-        SR-->>H: total
-        H->>H: CalcCoinFromRatings(total) → coin_amount
+    フロント->>ハンドラー: GET /api/favorites
+    ハンドラー->>お気に入りリポジトリ: 一覧取得
+    お気に入りリポジトリ->>DB: spot_likes を取得（いいね済みスポット一覧）
+    DB-->>お気に入りリポジトリ: スポット一覧（名前・写真・説明付き）
+    お気に入りリポジトリ-->>ハンドラー: スポット一覧
+
+    loop 各スポットを並列処理
+        ハンドラー->>スポットリポジトリ: 評価数を取得
+        スポットリポジトリ->>GooglePlaces: 評価数を取得
+        GooglePlaces-->>スポットリポジトリ: 評価数
+        スポットリポジトリ-->>ハンドラー: 評価数
+        ハンドラー->>ハンドラー: コイン枚数を計算
     end
-    H-->>F: 200 [{ id, place_id, name, photo_url, description, coin_amount, ... }]
+
+    ハンドラー-->>フロント: 200 スポット一覧（名前・写真・説明・コイン枚数）
 ```
 
 ## 移動距離保存 `POST /api/movements/today`
 
 ```mermaid
 sequenceDiagram
-    participant F as フロント
-    participant H as MovementHandler
-    participant R as MovementRepository
-    participant DB as Supabase
+    participant フロント
+    participant ハンドラー
+    participant 移動距離リポジトリ
+    participant DB as データベース
 
-    F->>H: POST /api/movements/today<br/>{ real_distance_km, used_virtual_distance_km }
-    H->>R: Save(userID, req)
-    R->>DB: RPC save_movement(userID, real_distance_km, used_virtual_distance_km)
-    Note over DB: UPSERT movements<br/>ON CONFLICT → 累積加算
-    DB-->>R: SETOF movements (当日レコード)
-    R-->>H: Movement
-    H->>H: virtual_distance_km = real × 5<br/>remaining = max(0, virtual - used)
-    H-->>F: 200 { date, real_distance_km, virtual_distance_km,<br/>used_virtual_distance_km, remaining_distance_km }
+    フロント->>ハンドラー: POST /api/movements/today<br/>{ 実距離(km), 使用した仮想距離(km) }
+    ハンドラー->>移動距離リポジトリ: 移動距離を保存
+    移動距離リポジトリ->>DB: save_movement RPC
+
+    Note over DB: 当日レコードがあれば累積加算<br/>なければ新規作成（UPSERT）
+
+    DB-->>移動距離リポジトリ: 当日の合計レコード
+    移動距離リポジトリ-->>ハンドラー: 当日の移動データ
+
+    ハンドラー->>ハンドラー: 仮想距離 = 実距離 × 5<br/>残り距離 = max(0, 仮想距離 - 使用済み)
+    ハンドラー-->>フロント: 200 実距離・仮想距離・使用済み距離・残り距離
 ```
 
 ## 移動距離取得 `GET /api/movements/today`
 
 ```mermaid
 sequenceDiagram
-    participant F as フロント
-    participant H as MovementHandler
-    participant R as MovementRepository
-    participant DB as Supabase
+    participant フロント
+    participant ハンドラー
+    participant 移動距離リポジトリ
+    participant DB as データベース
 
-    F->>H: GET /api/movements/today
-    H->>R: GetToday(userID)
-    R->>DB: SELECT FROM movements WHERE user_id=? AND date=today
-    alt レコードなし
-        DB-->>R: nil
-        R-->>H: nil
-        H-->>F: 200 { real:0, virtual:0, used:0, remaining:0 }
-    else レコードあり
-        DB-->>R: Movement
-        R-->>H: Movement
-        H->>H: virtual = real × 5<br/>remaining = max(0, virtual - used)
-        H-->>F: 200 { date, real_distance_km, virtual_distance_km,<br/>used_virtual_distance_km, remaining_distance_km }
+    フロント->>ハンドラー: GET /api/movements/today
+    ハンドラー->>移動距離リポジトリ: 当日データ取得
+    移動距離リポジトリ->>DB: movements から当日レコードを検索
+
+    alt 当日の移動記録なし
+        DB-->>移動距離リポジトリ: なし
+        移動距離リポジトリ-->>ハンドラー: なし
+        ハンドラー-->>フロント: 200 全て0で返す
+    else 移動記録あり
+        DB-->>移動距離リポジトリ: 当日レコード
+        移動距離リポジトリ-->>ハンドラー: 移動データ
+        ハンドラー->>ハンドラー: 仮想距離 = 実距離 × 5<br/>残り距離 = max(0, 仮想距離 - 使用済み)
+        ハンドラー-->>フロント: 200 実距離・仮想距離・使用済み距離・残り距離
     end
 ```
 
-## 認証フロー `POST /auth/login`
+## ログイン `POST /auth/login`
 
 ```mermaid
 sequenceDiagram
-    participant F as フロント
-    participant H as AuthHandler
-    participant Supa as Supabase Auth
+    participant フロント
+    participant ハンドラー
+    participant SupabaseAuth as Supabase Auth
 
-    F->>H: POST /auth/login<br/>{ email, password }
-    H->>Supa: SignInWithEmailPassword
+    フロント->>ハンドラー: POST /auth/login<br/>{ email, password }
+    ハンドラー->>SupabaseAuth: メール・パスワードで認証
+
     alt 認証失敗
-        Supa-->>H: error
-        H-->>F: 401 { error: "メールアドレスまたはパスワードが正しくありません" }
+        SupabaseAuth-->>ハンドラー: エラー
+        ハンドラー-->>フロント: 401 メールアドレスまたはパスワードが正しくありません
     else 認証成功
-        Supa-->>H: Session{ AccessToken, RefreshToken }
-        H-->>F: 200 { access_token, refresh_token }
+        SupabaseAuth-->>ハンドラー: アクセストークン・リフレッシュトークン
+        ハンドラー-->>フロント: 200 access_token・refresh_token
     end
 ```
